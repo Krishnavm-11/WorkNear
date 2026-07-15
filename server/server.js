@@ -19,11 +19,12 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "work-near-3jw4.vercel.app",
+      "https://work-near-3jw4.vercel.app",
     ],
     credentials: true,
   })
 );
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
