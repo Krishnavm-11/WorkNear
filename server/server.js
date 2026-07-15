@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
+
 import authRoutes from "./routes/authRoutes.js";
 import workerRoutes from "./routes/workerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
@@ -15,12 +16,21 @@ connectDB();
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://work-near-3jw4.vercel.app",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://work-near-3jw4.vercel.app",
-    ],
+    origin: function (origin, callback) {
+      // Allows Postman and the permitted frontend URLs
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
