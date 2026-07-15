@@ -19,7 +19,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      process.env.CLIENT_URL,
+      "work-near-3jw4.vercel.app",
     ],
     credentials: true,
   })

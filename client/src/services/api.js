@@ -1,14 +1,14 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://worknear-1.onrender.com",
+  baseURL: "https://worknear-1.onrender.com/api",
 });
 
 API.interceptors.request.use((config) => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
 
-  if (user?.token) {
-    config.headers.Authorization = `Bearer ${user.token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;
