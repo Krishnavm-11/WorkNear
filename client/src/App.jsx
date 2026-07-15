@@ -7,7 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import WorkerRoute from "./components/WorkerRoute";
 
-// User Pages
+// User pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -17,15 +17,14 @@ import Workers from "./pages/Workers";
 import WorkerDetails from "./pages/WorkerDetails";
 import Booking from "./pages/Booking";
 import UserProfile from "./pages/UserProfile";
-import AddReview from "./pages/AddReview";
 import RegisterComplaint from "./pages/RegisterComplaint";
 
-// Worker Page
+// Worker pages
 import WorkerDashboard from "./pages/WorkerDashboard";
 import CreateWorkerProfile from "./pages/CreateWorkerProfile";
 import EditWorkerProfile from "./pages/EditWorkerProfile";
 
-// Admin Pages
+// Admin pages
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import BookingView from "./pages/admin/BookingView";
@@ -34,7 +33,6 @@ import UserView from "./pages/admin/UserView";
 import ComplaintView from "./pages/admin/ComplaintView";
 
 function AppContent() {
-
   const location = useLocation();
 
   const adminPages = [
@@ -50,29 +48,19 @@ function AppContent() {
 
   return (
     <>
-
       {!isAdminPage && <Navbar />}
 
       <Routes>
-
-        {/* Public Pages */}
-
+        {/* Public routes */}
         <Route path="/" element={<Home />} />
-
         <Route path="/login" element={<Login />} />
-
         <Route path="/register" element={<Register />} />
-
         <Route path="/about" element={<About />} />
-
         <Route path="/contact" element={<Contact />} />
-
         <Route path="/workers" element={<Workers />} />
-
         <Route path="/worker/:id" element={<WorkerDetails />} />
 
-        {/* User Routes */}
-
+        {/* User routes */}
         <Route
           path="/booking/:id"
           element={
@@ -92,25 +80,24 @@ function AppContent() {
         />
 
         <Route
-  path="/register-complaint"
-  element={
-    <ProtectedRoute>
-      <RegisterComplaint />
-    </ProtectedRoute>
-  }
-/>
+          path="/register-complaint"
+          element={
+            <ProtectedRoute>
+              <RegisterComplaint />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
-  path="/register-complaint/:workerId/:bookingId"
-  element={
-    <ProtectedRoute>
-      <RegisterComplaint />
-    </ProtectedRoute>
-  }
-/>
+          path="/register-complaint/:workerId/:bookingId"
+          element={
+            <ProtectedRoute>
+              <RegisterComplaint />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Worker Routes */}
-
+        {/* Worker routes */}
         <Route
           path="/worker-dashboard"
           element={
@@ -120,33 +107,28 @@ function AppContent() {
           }
         />
 
-       <Route
-  path="/create-worker-profile"
-  element={
-    <WorkerRoute>
-      <CreateWorkerProfile />
-    </WorkerRoute>
-  }
-/>
-
-<Route
-  path="/edit-worker-profile"
-  element={
-    <WorkerRoute>
-      <EditWorkerProfile />
-    </WorkerRoute>
-  }
-/>
-
-        {/* Admin Login */}
-
         <Route
-          path="/admin-login"
-          element={<AdminLogin />}
+          path="/create-worker-profile"
+          element={
+            <WorkerRoute>
+              <CreateWorkerProfile />
+            </WorkerRoute>
+          }
         />
 
-        {/* Admin Routes */}
+        <Route
+          path="/edit-worker-profile"
+          element={
+            <WorkerRoute>
+              <EditWorkerProfile />
+            </WorkerRoute>
+          }
+        />
 
+        {/* Admin login */}
+        <Route path="/admin-login" element={<AdminLogin />} />
+
+        {/* Admin routes */}
         <Route
           path="/admin-dashboard"
           element={
@@ -191,24 +173,19 @@ function AppContent() {
             </AdminRoute>
           }
         />
-
       </Routes>
 
       {!isAdminPage && <Footer />}
-
     </>
   );
-
 }
 
 function App() {
-
   return (
     <BrowserRouter>
       <AppContent />
     </BrowserRouter>
   );
-
 }
 
 export default App;
