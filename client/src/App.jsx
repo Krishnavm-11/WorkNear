@@ -25,12 +25,12 @@ import CreateWorkerProfile from "./pages/CreateWorkerProfile";
 import EditWorkerProfile from "./pages/EditWorkerProfile";
 
 // Admin pages
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import BookingView from "./pages/admin/BookingView";
-import WorkerApproval from "./pages/admin/WorkerApproval";
-import UserView from "./pages/admin/UserView";
-import ComplaintView from "./pages/admin/ComplaintView";
+import AdminLogin from "./pages/Admin/AdminLogin";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import BookingView from "./pages/Admin/BookingView";
+import WorkerApproval from "./pages/Admin/WorkerApproval";
+import UserView from "./pages/Admin/UserView";
+import ComplaintView from "./pages/Admin/ComplaintView";
 
 function AppContent() {
   const location = useLocation();
