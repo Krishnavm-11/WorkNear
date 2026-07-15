@@ -65,11 +65,10 @@ function ComplaintView() {
 
                 <div className="mt-5">
                   <span
-                    className={`px-4 py-2 rounded-full text-white font-semibold ${
-                      item.status === "Resolved"
+                    className={`px-4 py-2 rounded-full text-white font-semibold ${item.status === "Resolved"
                         ? "bg-green-500"
                         : "bg-yellow-500"
-                    }`}
+                      }`}
                   >
                     {item.status}
                   </span>

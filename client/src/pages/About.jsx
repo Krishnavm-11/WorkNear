@@ -6,8 +6,6 @@ function About() {
 
     <div className="bg-gray-100 min-h-screen">
 
-      {/* Hero Section */}
-
       <div className="bg-black text-white py-20">
 
         <div className="max-w-6xl mx-auto px-6 text-center">
@@ -24,8 +22,6 @@ function About() {
         </div>
 
       </div>
-
-      {/* About Section */}
 
       <div className="max-w-6xl mx-auto py-20 px-6 grid md:grid-cols-2 gap-12 items-center">
 
@@ -58,8 +54,6 @@ function About() {
         </div>
 
       </div>
-
-      {/* Features */}
 
       <div className="max-w-6xl mx-auto px-6 pb-20">
 

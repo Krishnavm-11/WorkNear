@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUser,FaEnvelope,FaLock,FaTools } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaTools } from "react-icons/fa";
 import api from "../services/api";
 
 function Register() {
@@ -36,8 +36,6 @@ function Register() {
 
       <div className="bg-white shadow-2xl rounded-2xl overflow-hidden max-w-5xl w-full grid md:grid-cols-2">
 
-
-
         <div className="bg-orange-500 text-white flex flex-col justify-center items-center p-10">
 
           <FaTools className="text-7xl mb-6" />
@@ -56,7 +54,6 @@ function Register() {
 
         </div>
 
-
         <div className="p-10">
 
           <h2 className="text-3xl font-bold text-center mb-8">
@@ -67,8 +64,6 @@ function Register() {
 
           <form onSubmit={registerUser}>
 
-          
-
             <div className="flex items-center border rounded-lg mb-5">
 
               <FaUser className="ml-4 text-gray-500" />
@@ -78,12 +73,10 @@ function Register() {
                 placeholder="Full Name"
                 className="w-full p-4 outline-none"
                 value={name}
-                onChange={(e)=>setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
               />
 
             </div>
-
-           
 
             <div className="flex items-center border rounded-lg mb-5">
 
@@ -94,12 +87,10 @@ function Register() {
                 placeholder="Email"
                 className="w-full p-4 outline-none"
                 value={email}
-                onChange={(e)=>setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
               />
 
             </div>
-
-            
 
             <div className="flex items-center border rounded-lg mb-5">
 
@@ -110,16 +101,14 @@ function Register() {
                 placeholder="Password"
                 className="w-full p-4 outline-none"
                 value={password}
-                onChange={(e)=>setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
               />
 
             </div>
 
-        
-
             <select className="w-full border rounded-lg p-4 mb-5 outline-none"
               value={role}
-              onChange={(e)=>setRole(e.target.value)}
+              onChange={(e) => setRole(e.target.value)}
             >
 
               <option value="user">
@@ -149,7 +138,7 @@ function Register() {
             Already have an account?
 
             <Link to="/login" className="text-orange-500 font-bold ml-2">
-    
+
               Login
 
             </Link>

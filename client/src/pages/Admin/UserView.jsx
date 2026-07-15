@@ -69,13 +69,12 @@ function UserView() {
 
                     <td>
                       <span
-                        className={`px-3 py-1 rounded-full text-white ${
-                          user.role === "admin"
+                        className={`px-3 py-1 rounded-full text-white ${user.role === "admin"
                             ? "bg-red-500"
                             : user.role === "worker"
-                            ? "bg-green-500"
-                            : "bg-blue-500"
-                        }`}
+                              ? "bg-green-500"
+                              : "bg-blue-500"
+                          }`}
                       >
                         {user.role}
                       </span>

@@ -53,8 +53,6 @@ function Login() {
 
       <div className="bg-white shadow-2xl rounded-2xl overflow-hidden max-w-5xl w-full grid md:grid-cols-2">
 
-        {/* Left Side */}
-
         <div className="bg-black text-white flex flex-col justify-center items-center p-10">
 
           <FaTools className="text-orange-500 text-7xl mb-5" />
@@ -72,8 +70,6 @@ function Login() {
           </p>
 
         </div>
-
-        {/* Right Side */}
 
         <div className="p-10">
 

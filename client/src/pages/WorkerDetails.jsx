@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  FaMapMarkerAlt,
-  FaMoneyBill,
-  FaBriefcase,
-  FaTools,
-} from "react-icons/fa";
+import { FaMapMarkerAlt, FaMoneyBill, FaBriefcase, FaTools } from "react-icons/fa";
 import api from "../services/api";
 
 function WorkerDetails() {

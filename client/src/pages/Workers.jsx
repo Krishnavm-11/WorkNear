@@ -47,8 +47,6 @@ function Workers() {
   return (
     <div className="bg-gray-100 min-h-screen">
 
-      {/* Header */}
-
       <div className="bg-black text-white py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
 
@@ -63,8 +61,6 @@ function Workers() {
 
         </div>
       </div>
-
-      {/* Search */}
 
       <div className="max-w-7xl mx-auto px-6 py-10">
 
@@ -106,8 +102,6 @@ function Workers() {
         </div>
 
       </div>
-
-      {/* Worker Cards */}
 
       <div className="max-w-7xl mx-auto px-6 pb-20">
 

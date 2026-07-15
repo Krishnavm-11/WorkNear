@@ -1,15 +1,8 @@
-import {
-  FaMapMarkerAlt,
-  FaPhoneAlt,
-  FaEnvelope,
-  FaClock,
-} from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaClock } from "react-icons/fa";
 
 function Contact() {
   return (
     <div className="bg-gray-100 min-h-screen">
-
-      {/* Hero Section */}
 
       <div className="bg-black text-white py-20">
 
@@ -27,11 +20,7 @@ function Contact() {
 
       </div>
 
-      {/* Contact Section */}
-
       <div className="max-w-7xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-10">
-
-        {/* Left Side */}
 
         <div className="bg-white rounded-xl shadow-lg p-8">
 
@@ -41,7 +30,7 @@ function Contact() {
 
           <div className="flex items-center gap-5 mb-8">
 
-            <FaMapMarkerAlt className="text-orange-500 text-3xl"/>
+            <FaMapMarkerAlt className="text-orange-500 text-3xl" />
 
             <div>
 
@@ -59,7 +48,7 @@ function Contact() {
 
           <div className="flex items-center gap-5 mb-8">
 
-            <FaPhoneAlt className="text-orange-500 text-3xl"/>
+            <FaPhoneAlt className="text-orange-500 text-3xl" />
 
             <div>
 
@@ -77,7 +66,7 @@ function Contact() {
 
           <div className="flex items-center gap-5 mb-8">
 
-            <FaEnvelope className="text-orange-500 text-3xl"/>
+            <FaEnvelope className="text-orange-500 text-3xl" />
 
             <div>
 
@@ -95,7 +84,7 @@ function Contact() {
 
           <div className="flex items-center gap-5">
 
-            <FaClock className="text-orange-500 text-3xl"/>
+            <FaClock className="text-orange-500 text-3xl" />
 
             <div>
 
@@ -112,8 +101,6 @@ function Contact() {
           </div>
 
         </div>
-
-        {/* Contact Form */}
 
         <div className="bg-white rounded-xl shadow-lg p-8">
 

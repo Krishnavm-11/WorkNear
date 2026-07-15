@@ -65,7 +65,7 @@ function AdminLogin() {
           placeholder="Email"
           className="border w-full p-3 mb-4 rounded-lg"
           value={email}
-          onChange={(e)=>setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
@@ -73,7 +73,7 @@ function AdminLogin() {
           placeholder="Password"
           className="border w-full p-3 mb-4 rounded-lg"
           value={password}
-          onChange={(e)=>setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
 
         <button className="bg-orange-500 text-white w-full py-3 rounded-lg">

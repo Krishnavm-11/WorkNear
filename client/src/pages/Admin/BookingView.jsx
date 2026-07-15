@@ -70,15 +70,14 @@ function BookingView() {
 
                 <div className="mt-5">
                   <span
-                    className={`px-4 py-2 rounded-full text-white font-semibold ${
-                      booking.status === "Completed"
+                    className={`px-4 py-2 rounded-full text-white font-semibold ${booking.status === "Completed"
                         ? "bg-green-500"
                         : booking.status === "Pending"
-                        ? "bg-yellow-500"
-                        : booking.status === "Rejected"
-                        ? "bg-red-500"
-                        : "bg-blue-500"
-                    }`}
+                          ? "bg-yellow-500"
+                          : booking.status === "Rejected"
+                            ? "bg-red-500"
+                            : "bg-blue-500"
+                      }`}
                   >
                     {booking.status}
                   </span>

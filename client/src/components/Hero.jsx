@@ -25,8 +25,6 @@ function Hero() {
 
           </p>
 
-          {/* Search */}
-
           <div className="mt-10 flex justify-center">
 
             <div className="flex bg-white rounded-xl overflow-hidden shadow-lg w-full max-w-2xl">
