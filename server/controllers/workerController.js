@@ -14,6 +14,9 @@ export const createWorker = async (req, res) => {
       });
     }
 
+    console.log("Body:", req.body);
+    console.log("File:", req.file);
+
     const worker = await Worker.create({
       user: req.user._id,
       category: req.body.category,
