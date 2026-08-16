@@ -1,4 +1,9 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -35,16 +40,13 @@ import ComplaintView from "./pages/Admin/ComplaintView";
 function AppContent() {
   const location = useLocation();
 
-  const adminPages = [
-    "/admin-login",
-    "/admin-dashboard",
-    "/admin-bookings",
-    "/worker-approval",
-    "/user-view",
-    "/complaints",
-  ];
-
-  const isAdminPage = adminPages.includes(location.pathname);
+  const isAdminPage =
+    location.pathname === "/admin-login" ||
+    location.pathname.startsWith("/admin-dashboard") ||
+    location.pathname.startsWith("/admin-bookings") ||
+    location.pathname.startsWith("/worker-approval") ||
+    location.pathname.startsWith("/user-view") ||
+    location.pathname.startsWith("/complaints");
 
   return (
     <>
@@ -57,8 +59,15 @@ function AppContent() {
         <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+
+        {/* Workers page */}
         <Route path="/workers" element={<Workers />} />
-        <Route path="/worker/:id" element={<WorkerDetails />} />
+
+        {/* Worker details page */}
+        <Route
+          path="/worker/:id"
+          element={<WorkerDetails />}
+        />
 
         {/* User routes */}
         <Route
@@ -126,7 +135,10 @@ function AppContent() {
         />
 
         {/* Admin login */}
-        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route
+          path="/admin-login"
+          element={<AdminLogin />}
+        />
 
         {/* Admin routes */}
         <Route
@@ -171,6 +183,26 @@ function AppContent() {
             <AdminRoute>
               <ComplaintView />
             </AdminRoute>
+          }
+        />
+
+        {/* Page not found */}
+        <Route
+          path="*"
+          element={
+            <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+              <h1 className="text-6xl font-bold text-orange-500">
+                404
+              </h1>
+
+              <h2 className="text-2xl font-bold mt-4">
+                Page Not Found
+              </h2>
+
+              <p className="text-gray-600 mt-2">
+                The page you are looking for does not exist.
+              </p>
+            </div>
           }
         />
       </Routes>
