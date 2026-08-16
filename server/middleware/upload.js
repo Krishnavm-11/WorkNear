@@ -4,9 +4,12 @@ import cloudinary from "../config/cloudinary.js";
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: "worker_profiles",
-    allowed_formats: ["jpg", "jpeg", "png"],
+
+  params: async (req, file) => {
+    return {
+      folder: "worker_profiles",
+      allowed_formats: ["jpg", "jpeg", "png"],
+    };
   },
 });
 
