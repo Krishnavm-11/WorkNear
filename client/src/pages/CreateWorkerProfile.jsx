@@ -13,30 +13,36 @@ function CreateWorkerProfile() {
   const [profileImage, setProfileImage] = useState(null);
 
   const submitHandler = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const formData = new FormData();
+  const formData = new FormData();
 
-    formData.append("category", category);
-    formData.append("skills", skills);
-    formData.append("experience", experience);
-    formData.append("pricing", pricing);
-    formData.append("location", location);
+  formData.append("category", category);
+  formData.append("skills", skills);
+  formData.append("experience", experience);
+  formData.append("pricing", pricing);
+  formData.append("location", location);
+
+  if (profileImage) {
     formData.append("profileImage", profileImage);
+  }
 
-    try {
-      await api.post("/workers", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+  try {
+    await api.post("/workers", formData);
 
-      alert("Profile Submitted Successfully");
-      navigate("/worker-dashboard");
-    } catch (error) {
-      alert(error.response?.data?.message || "Something went wrong");
-    }
-  };
+    alert("Profile Submitted Successfully");
+
+    navigate("/worker-dashboard");
+
+  } catch (error) {
+    console.log(error.response?.data || error);
+
+    alert(
+      error.response?.data?.message ||
+      "Server Error"
+    );
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 py-10">
