@@ -34,10 +34,12 @@ export const createWorker = async (req, res) => {
       worker,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+  console.log("CREATE WORKER ERROR:", error);
+
+  res.status(500).json({
+    message: error.message,
+  });
+}
 };
 
 // Logged in worker profile
