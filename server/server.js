@@ -19,18 +19,16 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://work-near-iota.vercel.app",
+  "https://work-near-3jw4.vercel.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow Postman, mobile apps and server-to-server requests
       if (!origin) {
         return callback(null, true);
       }
 
-      // Allow approved frontend URLs
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -56,10 +54,8 @@ app.use(
   })
 );
 
-// Handle JSON request data
 app.use(express.json());
 
-// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/workers", workerRoutes);
 app.use("/api/bookings", bookingRoutes);
@@ -67,19 +63,16 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/complaints", complaintRoutes);
 
-// Test route
 app.get("/", (req, res) => {
   res.status(200).send("WorkNear API is running...");
 });
 
-// Handle unknown routes
 app.use((req, res) => {
   res.status(404).json({
     message: "Route not found",
   });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error(err.message);
 

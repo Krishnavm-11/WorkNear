@@ -1,12 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  FaBolt,
-  FaWrench,
-  FaHammer,
-  FaBroom,
-  FaBook,
-  FaPaintRoller,
-} from "react-icons/fa";
+import { FaBolt,FaWrench,FaHammer,FaBroom,FaBook,FaPaintRoller } from "react-icons/fa";
 
 function Categories() {
   const categories = [
