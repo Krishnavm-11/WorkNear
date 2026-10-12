@@ -57,6 +57,13 @@ app.use(
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+
+app.get("/api/auth/test", (req, res) => {
+  res.status(200).json({
+    message: "Auth routes are working",
+  });
+});
+
 app.use("/api/workers", workerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
