@@ -17,13 +17,14 @@ import complaintRoutes from "./routes/complaintRoutes.js";
 
 const app = express();
 
-// Allow your current frontend and local development
+// Allowed frontend URLs
 const allowedOrigins = [
   "http://localhost:5173",
   "https://work-near-iota.vercel.app",
   "https://work-near-3jw4.vercel.app",
 ];
 
+// Configure CORS only once
 app.use(
   cors({
     origin: allowedOrigins,
@@ -32,9 +33,8 @@ app.use(
     credentials: true,
   })
 );
-// Middleware: CORS must run before API routes
-app.use(cors(corsOptions));
 
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 
@@ -73,12 +73,6 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Server error:", err.message);
-
-  if (err.message === "Origin not allowed by CORS") {
-    return res.status(403).json({
-      message: "This frontend origin is not allowed.",
-    });
-  }
 
   res.status(500).json({
     message: "Internal server error",
