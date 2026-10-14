@@ -1,120 +1,149 @@
-
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  FaTools,
   FaUser,
   FaEnvelope,
   FaLock,
-  FaTools,
   FaEye,
   FaEyeSlash,
+  FaArrowRight,
   FaArrowLeft,
-  FaShieldAlt,
   FaCheckCircle,
+  FaUserTie,
+  FaShieldAlt,
 } from "react-icons/fa";
 import api from "../services/api";
 
 function Register() {
   const navigate = useNavigate();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("user");
-  const [otp, setOtp] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "user",
+  });
 
+  const [otp, setOtp] = useState("");
   const [step, setStep] = useState("register");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("error");
-
-  useEffect(() => {
-    if (countdown <= 0) return;
-
-    const timer = setTimeout(() => {
-      setCountdown((previous) => previous - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [countdown]);
 
   const showMessage = (text, type = "error") => {
     setMessage(text);
     setMessageType(type);
   };
 
-  // Step 1: Send registration OTP.
-  const registerUser = async (e) => {
-    e.preventDefault();
-    setMessage("");
+  const handleChange = (e) => {
+    const { name, value } = e.target;
 
-    if (name.trim().length < 2) {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Step 1: Send registration OTP
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    const normalizedName = formData.name.trim();
+
+    if (normalizedName.length < 2) {
       showMessage("Please enter your full name.");
       return;
     }
 
-    if (password.length < 6) {
+    if (formData.password.length < 6) {
       showMessage("Password must contain at least 6 characters.");
       return;
     }
 
     try {
       setLoading(true);
+      setMessage("");
 
-      const response = await api.post("/auth/register/send-otp", {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        role,
+      const res = await api.post("/auth/register/send-otp", {
+        ...formData,
+        name: normalizedName,
+        email: normalizedEmail,
       });
 
-      // Only switch to OTP screen after backend success.
-      setStep("otp");
-      setCountdown(60);
+      setFormData((prev) => ({
+        ...prev,
+        name: normalizedName,
+        email: normalizedEmail,
+      }));
+
       setOtp("");
+      setStep("otp");
 
       showMessage(
-        response.data.message || "Verification email sent.",
+        res.data.message || "Verification code sent to your email.",
         "success"
       );
     } catch (error) {
       showMessage(
         error.response?.data?.message ||
-          "Could not send the verification email. Please try again."
+          "Unable to start registration. Please try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: Verify OTP and create the account.
-  const verifyOtp = async (e) => {
+  // Step 2: Verify OTP
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    setMessage("");
 
     if (!/^\d{6}$/.test(otp)) {
-      showMessage("Enter the complete 6-digit verification code.");
+      showMessage("Please enter the 6-digit verification code.");
       return;
     }
 
     try {
       setLoading(true);
+      setMessage("");
 
-      const response = await api.post("/auth/register/verify-otp", {
-        email: email.trim().toLowerCase(),
+      const res = await api.post("/auth/register/verify-otp", {
+        email: formData.email.trim().toLowerCase(),
         otp,
       });
 
-      // Show success only after the server verifies the OTP.
+      // If the backend automatically logs in the new user
+      if (res.data.token && res.data.user) {
+        const user = res.data.user;
+
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(user));
+
+        showMessage("Account created successfully!", "success");
+
+        if (user.role === "worker") {
+          navigate("/worker-dashboard", { replace: true });
+        } else if (user.role === "admin") {
+          navigate("/admin-dashboard", { replace: true });
+        } else {
+          navigate("/profile", { replace: true });
+        }
+
+        return;
+      }
+
+      // If the backend verifies registration without logging in
       showMessage(
-        response.data.message || "Registration successful!",
+        res.data.message ||
+          "Registration verified. Please log in to continue.",
         "success"
       );
 
-      setStep("success");
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 1200);
     } catch (error) {
       showMessage(
         error.response?.data?.message ||
@@ -125,374 +154,410 @@ function Register() {
     }
   };
 
-  // Resend OTP after the cooldown.
-  const resendOtp = async () => {
-    if (countdown > 0 || resending) return;
-
-    setMessage("");
-
+  // Resend OTP
+  const handleResendOtp = async () => {
     try {
-      setResending(true);
+      setLoading(true);
+      setMessage("");
 
-      const response = await api.post("/auth/register/resend-otp", {
-        email: email.trim().toLowerCase(),
+      const res = await api.post("/auth/register/send-otp", {
+        ...formData,
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
       });
 
       setOtp("");
-      setCountdown(60);
 
       showMessage(
-        response.data.message || "A new verification code was sent.",
+        res.data.message || "A new verification code was sent.",
         "success"
       );
     } catch (error) {
       const retryAfter = error.response?.data?.retryAfter;
 
-      if (retryAfter) setCountdown(retryAfter);
-
       showMessage(
-        error.response?.data?.message ||
-          "Could not resend the verification code."
+        retryAfter
+          ? `Please wait ${retryAfter} seconds before requesting another code.`
+          : error.response?.data?.message ||
+              "Could not resend the verification code."
       );
     } finally {
-      setResending(false);
+      setLoading(false);
     }
   };
 
-  const messageClass =
-    messageType === "success"
-      ? "border-green-200 bg-green-50 text-green-700"
-      : "border-red-200 bg-red-50 text-red-700";
+  const goBackToRegistration = () => {
+    setStep("register");
+    setOtp("");
+    setMessage("");
+  };
 
   return (
-    <div className="min-h-screen bg-[#f5f3ef] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-3xl border border-black/5 bg-white shadow-[0_24px_80px_rgba(25,20,15,0.10)] lg:grid-cols-2">
+    <main className="min-h-screen bg-[#f4f2ed] px-4 py-8 text-gray-900 sm:px-6 lg:px-10">
+      <div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-2xl shadow-black/10 lg:min-h-[720px] lg:grid-cols-[0.9fr_1.1fr]">
+        {/* Branding panel */}
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[#171717] p-10 text-white lg:flex xl:p-14">
+          <div className="absolute -right-28 top-28 h-80 w-80 rounded-full border border-orange-500/20 shadow-[0_0_0_45px_rgba(249,115,22,0.04),0_0_0_90px_rgba(249,115,22,0.025)]" />
 
-          {/* Branding panel */}
-          <div className="relative flex min-h-[300px] flex-col justify-between overflow-hidden bg-[#171715] p-8 text-white sm:p-12 lg:min-h-[680px]">
-            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full border border-orange-400/20" />
-            <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
+          <div className="absolute -bottom-32 -left-24 h-72 w-72 rounded-full bg-orange-500/10 blur-3xl" />
 
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500">
-                <FaTools className="text-xl" />
-              </div>
+          <Link to="/" className="relative z-10 flex w-fit items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-xl shadow-lg shadow-orange-500/20">
+              <FaTools />
+            </span>
 
-              <div>
-                <h1 className="text-xl font-bold tracking-wide">WorkNear</h1>
-                <p className="text-xs tracking-[0.18em] text-white/50">
-                  LOCAL HELP. MADE SIMPLE.
-                </p>
-              </div>
+            <span className="text-3xl font-extrabold tracking-tight">
+              Work<span className="text-orange-500">Near</span>
+            </span>
+          </Link>
+
+          <div className="relative z-10 my-12">
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.3em] text-orange-400">
+              JOIN OUR COMMUNITY
+            </p>
+
+            <h1 className="text-5xl font-extrabold leading-[1.12] tracking-tight xl:text-6xl">
+              Better services.
+              <br />
+              <span className="text-orange-500">Closer to home.</span>
+            </h1>
+
+            <p className="mt-6 max-w-md text-base leading-8 text-gray-400">
+              Create your WorkNear account and make finding reliable local
+              professionals easier than ever.
+            </p>
+
+            <div className="mt-10 space-y-5">
+              {[
+                "Discover trusted local professionals",
+                "Manage your service bookings",
+                "Stay protected with email verification",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500/10 text-orange-400">
+                    <FaCheckCircle />
+                  </span>
+                  <span className="text-sm text-gray-300">{item}</span>
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div className="relative z-10 my-10 lg:my-0">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-orange-400">
-                Your neighbourhood, connected
-              </p>
-
-              <h2 className="max-w-md text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-                Great work starts
-                <span className="text-orange-400"> close to home.</span>
-              </h2>
-
-              <p className="mt-6 max-w-md text-base leading-7 text-white/60">
-                Find trusted local professionals or share your skills with
-                people who need your help.
-              </p>
-            </div>
-
-            <p className="relative z-10 text-xs text-white/35">
-              Connecting people. Supporting local skills.
+          <div className="relative z-10 border-t border-white/10 pt-5">
+            <p className="text-xs tracking-widest text-gray-500">
+              YOUR COMMUNITY. YOUR PROFESSIONALS.
             </p>
           </div>
+        </section>
 
-          {/* Registration panel */}
-          <div className="flex items-center justify-center p-6 sm:p-10 lg:p-12">
-            <div className="w-full max-w-md">
+        {/* Registration and OTP forms */}
+        <section className="flex items-center justify-center px-5 py-9 sm:px-10 lg:px-12 xl:px-16">
+          <div className="w-full max-w-md">
+            <Link
+              to="/"
+              className="mb-8 flex w-fit items-center gap-2 text-2xl font-extrabold lg:hidden"
+            >
+              <FaTools className="text-orange-500" />
+              Work<span className="-ml-2 text-orange-500">Near</span>
+            </Link>
 
-              {step === "register" && (
-                <>
-                  <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-600">
-                    Get started
-                  </p>
+            {step === "register" ? (
+              <>
+                <div className="mb-7">
+                  <span className="mb-4 inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-[10px] font-bold tracking-[0.2em] text-orange-600">
+                    CREATE YOUR ACCOUNT
+                  </span>
 
-                  <h2 className="text-3xl font-semibold tracking-tight text-[#20201e] sm:text-4xl">
-                    Create your account
+                  <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                    Let's get you
+                    <span className="text-orange-500"> started.</span>
                   </h2>
 
                   <p className="mt-3 text-sm leading-6 text-gray-500">
-                    Join WorkNear and connect with your local community.
+                    Enter your details to join the WorkNear community.
                   </p>
+                </div>
 
-                  {message && (
-                    <div
-                      role="alert"
-                      className={`mt-6 rounded-xl border px-4 py-3 text-sm ${messageClass}`}
-                    >
-                      {message}
-                    </div>
-                  )}
-
-                  <form onSubmit={registerUser} className="mt-7 space-y-5">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Full name
-                      </label>
-
-                      <div className="flex items-center rounded-xl border border-gray-200 bg-[#fafaf9] focus-within:border-orange-400">
-                        <FaUser className="ml-4 text-sm text-gray-400" />
-                        <input
-                          type="text"
-                          autoComplete="name"
-                          placeholder="Enter your full name"
-                          maxLength={80}
-                          required
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-transparent px-4 py-3.5 text-sm outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Email address
-                      </label>
-
-                      <div className="flex items-center rounded-xl border border-gray-200 bg-[#fafaf9] focus-within:border-orange-400">
-                        <FaEnvelope className="ml-4 text-sm text-gray-400" />
-                        <input
-                          type="email"
-                          autoComplete="email"
-                          placeholder="you@example.com"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full bg-transparent px-4 py-3.5 text-sm outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Password
-                      </label>
-
-                      <div className="flex items-center rounded-xl border border-gray-200 bg-[#fafaf9] focus-within:border-orange-400">
-                        <FaLock className="ml-4 text-sm text-gray-400" />
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          autoComplete="new-password"
-                          placeholder="At least 6 characters"
-                          minLength={6}
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-transparent px-4 py-3.5 text-sm outline-none"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                          className="mr-4 text-gray-400"
-                        >
-                          {showPassword ? <FaEyeSlash /> : <FaEye />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        I want to join as
-                      </label>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setRole("user")}
-                          className={`rounded-xl border p-4 text-left transition ${
-                            role === "user"
-                              ? "border-orange-500 bg-orange-50 ring-2 ring-orange-500/10"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <FaUser className="mb-2 text-orange-600" />
-                          <span className="block text-sm font-semibold text-gray-800">
-                            Customer
-                          </span>
-                          <span className="mt-1 block text-xs text-gray-500">
-                            Find local help
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setRole("worker")}
-                          className={`rounded-xl border p-4 text-left transition ${
-                            role === "worker"
-                              ? "border-orange-500 bg-orange-50 ring-2 ring-orange-500/10"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <FaTools className="mb-2 text-orange-600" />
-                          <span className="block text-sm font-semibold text-gray-800">
-                            Worker
-                          </span>
-                          <span className="mt-1 block text-xs text-gray-500">
-                            Offer your skills
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-60"
-                    >
-                      {loading ? "Sending verification code..." : "Create account"}
-                      {!loading && <span>→</span>}
-                    </button>
-                  </form>
-
-                  <p className="mt-7 text-center text-sm text-gray-500">
-                    Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="font-semibold text-orange-600 hover:text-orange-700"
-                    >
-                      Log in
-                    </Link>
-                  </p>
-                </>
-              )}
-
-              {step === "otp" && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep("register");
-                      setOtp("");
-                      setMessage("");
-                    }}
-                    className="mb-8 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900"
+                {message && (
+                  <div
+                    role="alert"
+                    aria-live="polite"
+                    className={`mb-5 rounded-xl border p-3.5 text-sm ${
+                      messageType === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-red-200 bg-red-50 text-red-600"
+                    }`}
                   >
-                    <FaArrowLeft />
-                    Back to registration
-                  </button>
-
-                  <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-                    <FaShieldAlt className="text-2xl" />
+                    {message}
                   </div>
+                )}
 
-                  <h2 className="text-3xl font-semibold tracking-tight text-[#20201e]">
-                    Check your email
-                  </h2>
-
-                  <p className="mt-3 text-sm leading-6 text-gray-500">
-                    Enter the 6-digit code sent to{" "}
-                    <strong className="text-gray-800">{email}</strong>.
-                    The code expires in 5 minutes.
-                  </p>
-
-                  {message && (
-                    <div
-                      role={messageType === "success" ? "status" : "alert"}
-                      className={`mt-6 rounded-xl border px-4 py-3 text-sm ${messageClass}`}
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="register-name"
+                      className="mb-2 block text-sm font-semibold text-gray-700"
                     >
-                      {message}
-                    </div>
-                  )}
-
-                  <form onSubmit={verifyOtp} className="mt-8">
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      Verification code
+                      Full name
                     </label>
 
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder="000000"
-                      maxLength={6}
-                      required
-                      value={otp}
-                      onChange={(e) =>
-                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                      }
-                      className="w-full rounded-xl border border-gray-200 bg-[#fafaf9] px-4 py-5 text-center text-3xl font-semibold tracking-[0.5em] text-gray-900 outline-none focus:border-orange-400"
-                    />
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="mt-5 w-full rounded-xl bg-orange-500 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-60"
-                    >
-                      {loading ? "Verifying..." : "Verify email"}
-                    </button>
-                  </form>
-
-                  <div className="mt-6 text-center text-sm text-gray-500">
-                    Didn't receive the code?{" "}
-                    <button
-                      type="button"
-                      onClick={resendOtp}
-                      disabled={countdown > 0 || resending}
-                      className="font-semibold text-orange-600 hover:text-orange-700 disabled:text-gray-400"
-                    >
-                      {resending
-                        ? "Sending..."
-                        : countdown > 0
-                          ? `Resend in ${countdown}s`
-                          : "Resend code"}
-                    </button>
+                    <div className="flex items-center rounded-xl border border-gray-200 bg-[#faf9f6] transition focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-500/10">
+                      <FaUser className="ml-4 shrink-0 text-sm text-gray-400" />
+                      <input
+                        id="register-name"
+                        type="text"
+                        name="name"
+                        placeholder="Enter your full name"
+                        autoComplete="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-gray-400"
+                        required
+                        minLength={2}
+                      />
+                    </div>
                   </div>
 
-                  <p className="mt-6 text-center text-xs leading-5 text-gray-400">
-                    <FaShieldAlt className="mr-1 inline" />
-                    Never share your verification code with anyone.
-                  </p>
-                </>
-              )}
+                  <div>
+                    <label
+                      htmlFor="register-email"
+                      className="mb-2 block text-sm font-semibold text-gray-700"
+                    >
+                      Email address
+                    </label>
 
-              {step === "success" && (
-                <div className="py-8 text-center">
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50 text-green-600">
-                    <FaCheckCircle className="text-4xl" />
+                    <div className="flex items-center rounded-xl border border-gray-200 bg-[#faf9f6] transition focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-500/10">
+                      <FaEnvelope className="ml-4 shrink-0 text-sm text-gray-400" />
+                      <input
+                        id="register-email"
+                        type="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-gray-400"
+                        required
+                      />
+                    </div>
                   </div>
 
-                  <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-green-600">
-                    Email verified
-                  </p>
+                  <div>
+                    <label
+                      htmlFor="register-password"
+                      className="mb-2 block text-sm font-semibold text-gray-700"
+                    >
+                      Create password
+                    </label>
 
-                  <h2 className="text-3xl font-semibold tracking-tight text-[#20201e]">
-                    Registration successful!
-                  </h2>
+                    <div className="flex items-center rounded-xl border border-gray-200 bg-[#faf9f6] transition focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-500/10">
+                      <FaLock className="ml-4 shrink-0 text-sm text-gray-400" />
+                      <input
+                        id="register-password"
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder="Create a strong password"
+                        autoComplete="new-password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full min-w-0 bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-gray-400"
+                        required
+                        minLength={6}
+                      />
 
-                  <p className="mt-4 text-sm leading-6 text-gray-500">
-                    Your WorkNear account has been created successfully.
-                    You can now log in with your email and password.
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="mr-4 text-gray-400 transition hover:text-orange-500"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-3 block text-sm font-semibold text-gray-700">
+                      I want to join as
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, role: "user" }))
+                        }
+                        aria-pressed={formData.role === "user"}
+                        className={`rounded-xl border p-4 text-left transition ${
+                          formData.role === "user"
+                            ? "border-orange-500 bg-orange-50 ring-2 ring-orange-500/10"
+                            : "border-gray-200 bg-white hover:border-orange-200"
+                        }`}
+                      >
+                        <FaUser
+                          className={`mb-3 text-xl ${
+                            formData.role === "user"
+                              ? "text-orange-500"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <p className="text-sm font-bold">Customer</p>
+                        <p className="mt-1 text-xs leading-5 text-gray-500">
+                          Book local services
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, role: "worker" }))
+                        }
+                        aria-pressed={formData.role === "worker"}
+                        className={`rounded-xl border p-4 text-left transition ${
+                          formData.role === "worker"
+                            ? "border-orange-500 bg-orange-50 ring-2 ring-orange-500/10"
+                            : "border-gray-200 bg-white hover:border-orange-200"
+                        }`}
+                      >
+                        <FaUserTie
+                          className={`mb-3 text-xl ${
+                            formData.role === "worker"
+                              ? "text-orange-500"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <p className="text-sm font-bold">Worker</p>
+                        <p className="mt-1 text-xs leading-5 text-gray-500">
+                          Offer your services
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="group flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/15 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loading ? "Sending verification code..." : "Create account"}
+                    {!loading && (
+                      <FaArrowRight className="transition group-hover:translate-x-1" />
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-5 flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <FaShieldAlt className="text-orange-500" />
+                  Your account is protected by email verification.
+                </div>
+
+                <p className="mt-6 text-center text-sm text-gray-500">
+                  Already have an account?
+                  <Link
+                    to="/login"
+                    className="ml-2 font-bold text-orange-600 transition hover:text-orange-700"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={goBackToRegistration}
+                  className="mb-8 flex items-center gap-2 text-sm font-medium text-gray-500 transition hover:text-orange-600"
+                >
+                  <FaArrowLeft />
+                  Back to registration
+                </button>
+
+                <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-3xl text-orange-500">
+                  <FaShieldAlt />
+                </div>
+
+                <p className="mb-3 text-xs font-bold tracking-[0.25em] text-orange-600">
+                  EMAIL VERIFICATION
+                </p>
+
+                <h2 className="text-3xl font-extrabold tracking-tight">
+                  Verify your email.
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-gray-500">
+                  Enter the 6-digit verification code sent to your email address.
+                </p>
+
+                <div className="mt-4 break-all rounded-xl border border-gray-200 bg-[#faf9f6] p-4 text-sm font-medium text-gray-700">
+                  <FaEnvelope className="mr-2 inline text-orange-500" />
+                  {formData.email}
+                </div>
+
+                {message && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`mt-5 rounded-xl border p-3.5 text-sm ${
+                      messageType === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-red-200 bg-red-50 text-red-600"
+                    }`}
+                  >
+                    {message}
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyOtp} className="mt-7">
+                  <label
+                    htmlFor="register-otp"
+                    className="mb-3 block text-sm font-semibold text-gray-700"
+                  >
+                    Verification code
+                  </label>
+
+                  <input
+                    id="register-otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    className="w-full rounded-xl border border-gray-200 bg-[#faf9f6] px-4 py-5 text-center text-3xl font-bold tracking-[0.6em] text-orange-600 outline-none transition placeholder:text-gray-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10"
+                    required
+                  />
+
+                  <p className="mt-3 text-xs text-gray-500">
+                    Enter all six digits to verify your account.
                   </p>
 
                   <button
-                    type="button"
-                    onClick={() => navigate("/login")}
-                    className="mt-8 w-full rounded-xl bg-orange-500 py-4 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600"
+                    type="submit"
+                    disabled={loading || otp.length !== 6}
+                    className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 px-5 py-4 text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Continue to login →
+                    {loading ? "Verifying..." : "Verify & Continue"}
+                    {!loading && <FaArrowRight />}
                   </button>
-                </div>
-              )}
+                </form>
 
-            </div>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={loading}
+                  className="mt-5 w-full rounded-lg py-2 text-sm font-bold text-orange-600 transition hover:text-orange-700 disabled:opacity-50"
+                >
+                  {loading ? "Please wait..." : "Didn't receive the code? Resend OTP"}
+                </button>
+              </>
+            )}
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
 

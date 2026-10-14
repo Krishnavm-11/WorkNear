@@ -23,11 +23,13 @@ import WorkerDetails from "./pages/WorkerDetails";
 import Booking from "./pages/Booking";
 import UserProfile from "./pages/UserProfile";
 import RegisterComplaint from "./pages/RegisterComplaint";
+import SavedWorkers from "./pages/SavedWorkers";
 
 // Worker pages
 import WorkerDashboard from "./pages/WorkerDashboard";
 import CreateWorkerProfile from "./pages/CreateWorkerProfile";
 import EditWorkerProfile from "./pages/EditWorkerProfile";
+import WorkerContact from "./pages/WorkerContact";
 
 // Admin pages
 import AdminLogin from "./pages/Admin/AdminLogin";
@@ -40,6 +42,7 @@ import ComplaintView from "./pages/Admin/ComplaintView";
 function AppContent() {
   const location = useLocation();
 
+  // Hide the main Navbar and Footer on admin pages.
   const isAdminPage =
     location.pathname === "/admin-login" ||
     location.pathname.startsWith("/admin-dashboard") ||
@@ -48,28 +51,53 @@ function AppContent() {
     location.pathname.startsWith("/user-view") ||
     location.pathname.startsWith("/complaints");
 
+  // Hide the main Navbar and Footer on worker pages.
+  const isWorkerPage = [
+    "/worker-dashboard",
+    "/worker-contact",
+    "/create-worker-profile",
+    "/edit-worker-profile",
+  ].some(
+    (path) =>
+      location.pathname === path ||
+      location.pathname.startsWith(`${path}/`)
+  );
+
+  const hideLayout = isAdminPage || isWorkerPage;
+
   return (
     <>
-      {!isAdminPage && <Navbar />}
+      {!hideLayout && <Navbar />}
 
       <Routes>
-        {/* Public routes */}
+        {/* ================= PUBLIC ROUTES ================= */}
+
         <Route path="/" element={<Home />} />
+
         <Route path="/login" element={<Login />} />
+
         <Route path="/register" element={<Register />} />
+
         <Route path="/about" element={<About />} />
+
         <Route path="/contact" element={<Contact />} />
 
-        {/* Workers page */}
-        <Route path="/workers" element={<Workers />} />
+        {/* ================= WORKERS PAGE ================= */}
 
-        {/* Worker details page */}
+        <Route
+          path="/workers"
+          element={<Workers />}
+        />
+
+        {/* ================= WORKER DETAILS ================= */}
+
         <Route
           path="/worker/:id"
           element={<WorkerDetails />}
         />
 
-        {/* User routes */}
+        {/* ================= USER ROUTES ================= */}
+
         <Route
           path="/booking/:id"
           element={
@@ -89,6 +117,17 @@ function AppContent() {
         />
 
         <Route
+          path="/saved-workers"
+          element={
+            <ProtectedRoute>
+              <SavedWorkers />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================= REGISTER COMPLAINT ================= */}
+
+        <Route
           path="/register-complaint"
           element={
             <ProtectedRoute>
@@ -106,7 +145,9 @@ function AppContent() {
           }
         />
 
-        {/* Worker routes */}
+        {/* ================= WORKER ROUTES ================= */}
+
+        {/* Worker dashboard */}
         <Route
           path="/worker-dashboard"
           element={
@@ -116,6 +157,7 @@ function AppContent() {
           }
         />
 
+        {/* Create worker profile */}
         <Route
           path="/create-worker-profile"
           element={
@@ -125,6 +167,7 @@ function AppContent() {
           }
         />
 
+        {/* Edit worker profile */}
         <Route
           path="/edit-worker-profile"
           element={
@@ -134,13 +177,25 @@ function AppContent() {
           }
         />
 
-        {/* Admin login */}
+        {/* Worker contact and support */}
+        <Route
+          path="/worker-contact"
+          element={
+            <WorkerRoute>
+              <WorkerContact />
+            </WorkerRoute>
+          }
+        />
+
+        {/* ================= ADMIN LOGIN ================= */}
+
         <Route
           path="/admin-login"
           element={<AdminLogin />}
         />
 
-        {/* Admin routes */}
+        {/* ================= ADMIN ROUTES ================= */}
+
         <Route
           path="/admin-dashboard"
           element={
@@ -186,20 +241,21 @@ function AppContent() {
           }
         />
 
-        {/* Page not found */}
+        {/* ================= PAGE NOT FOUND ================= */}
+
         <Route
           path="*"
           element={
-            <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+            <div className="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
               <h1 className="text-6xl font-bold text-orange-500">
                 404
               </h1>
 
-              <h2 className="text-2xl font-bold mt-4">
+              <h2 className="mt-4 text-2xl font-bold">
                 Page Not Found
               </h2>
 
-              <p className="text-gray-600 mt-2">
+              <p className="mt-2 text-gray-600">
                 The page you are looking for does not exist.
               </p>
             </div>
@@ -207,7 +263,7 @@ function AppContent() {
         />
       </Routes>
 
-      {!isAdminPage && <Footer />}
+      {!hideLayout && <Footer />}
     </>
   );
 }

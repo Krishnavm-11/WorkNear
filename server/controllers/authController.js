@@ -1,3 +1,4 @@
+
 import User from "../models/User.js";
 import LoginOtp from "../models/LoginOtp.js";
 import RegisterOtp from "../models/RegisterOtp.js";
@@ -12,17 +13,21 @@ const OTP_EXPIRY_MINUTES = 5;
 const OTP_RESEND_SECONDS = 60;
 const MAX_OTP_ATTEMPTS = 5;
 
+// Normalize email addresses
 const normalizeEmail = (email) => email.trim().toLowerCase();
 
 const findUserByEmail = (email) =>
   User.findOne({ email: normalizeEmail(email) });
 
+// Generate a six-digit OTP
 const generateOtp = () =>
   crypto.randomInt(100000, 1000000).toString();
 
+// Hash OTP before storing it
 const hashOtp = (otp) =>
   crypto.createHash("sha256").update(otp).digest("hex");
 
+// Compare OTP securely
 const compareOtp = (otp, savedHash) => {
   const submittedHash = Buffer.from(hashOtp(otp), "hex");
   const expectedHash = Buffer.from(savedHash, "hex");
@@ -45,8 +50,10 @@ const resendWait = (record) => {
   );
 };
 
-// Send registration OTP.
+// ========================================
+// REGISTER: SEND OTP
 // POST /api/auth/register/send-otp
+// ========================================
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -112,7 +119,6 @@ export const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const now = new Date();
 
-    // Save temporary registration details, not a User account.
     await RegisterOtp.findOneAndUpdate(
       { email: normalizedEmail },
       {
@@ -146,11 +152,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    console.log(
-      "Registration OTP accepted by email server:",
-      normalizedEmail
-    );
-
     return res.status(200).json({
       message: "Verification code sent. It expires in 5 minutes.",
       email: normalizedEmail,
@@ -164,8 +165,10 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// Verify registration OTP and create the account.
+// ========================================
+// REGISTER: VERIFY OTP
 // POST /api/auth/register/verify-otp
+// ========================================
 export const verifyRegisterOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -228,7 +231,6 @@ export const verifyRegisterOtp = async (req, res) => {
       });
     }
 
-    // Check again before creating the account.
     const existingUser = await findUserByEmail(normalizedEmail);
 
     if (existingUser) {
@@ -239,7 +241,6 @@ export const verifyRegisterOtp = async (req, res) => {
       });
     }
 
-    // Create the account only after successful OTP verification.
     const user = await User.create({
       name: pending.name,
       email: normalizedEmail,
@@ -273,8 +274,10 @@ export const verifyRegisterOtp = async (req, res) => {
   }
 };
 
-// Resend registration OTP.
+// ========================================
+// REGISTER: RESEND OTP
 // POST /api/auth/register/resend-otp
+// ========================================
 export const resendRegisterOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -350,8 +353,10 @@ export const resendRegisterOtp = async (req, res) => {
   }
 };
 
-// Check password and send login OTP.
+// ========================================
+// CUSTOMER/WORKER: SEND LOGIN OTP
 // POST /api/auth/login/send-otp
+// ========================================
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -447,8 +452,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// Verify login OTP and issue JWT.
+// ========================================
+// CUSTOMER/WORKER: VERIFY LOGIN OTP
 // POST /api/auth/verify-otp
+// ========================================
 export const verifyLoginOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -548,6 +555,70 @@ export const verifyLoginOtp = async (req, res) => {
 
     return res.status(500).json({
       message: "OTP verification failed. Please try again.",
+    });
+  }
+};
+
+// ========================================
+// ADMIN: LOGIN WITHOUT OTP
+// POST /api/auth/login
+// ========================================
+export const adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: "Email and password are required.",
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const user = await findUserByEmail(normalizedEmail);
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        message: "Invalid email or password.",
+      });
+    }
+
+    // Only existing admin accounts are allowed
+    if (user.role !== "admin") {
+      return res.status(403).json({
+        message: "Access denied. Admin account required.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured.");
+    }
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      message: "Admin login successful.",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+
+    return res.status(500).json({
+      message: "Admin login failed. Please try again.",
     });
   }
 };

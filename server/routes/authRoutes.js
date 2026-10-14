@@ -7,6 +7,7 @@ import {
   resendRegisterOtp,
   loginUser,
   verifyLoginOtp,
+  adminLogin,
 } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -16,8 +17,11 @@ router.post("/register/send-otp", registerUser);
 router.post("/register/verify-otp", verifyRegisterOtp);
 router.post("/register/resend-otp", resendRegisterOtp);
 
-// Login OTP
+// Customer and worker login with OTP
 router.post("/login/send-otp", loginUser);
 router.post("/verify-otp", verifyLoginOtp);
+
+// Admin login without OTP
+router.post("/login", adminLogin);
 
 export default router;

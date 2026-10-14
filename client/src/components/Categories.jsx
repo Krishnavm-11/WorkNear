@@ -1,62 +1,83 @@
+
 import { Link } from "react-router-dom";
-import { FaBolt,FaWrench,FaHammer,FaBroom,FaBook,FaPaintRoller } from "react-icons/fa";
+import {
+  FaBolt,
+  FaWrench,
+  FaHammer,
+  FaBroom,
+  FaBook,
+  FaPaintRoller,
+  FaArrowUp,
+} from "react-icons/fa";
 
 function Categories() {
   const categories = [
     {
       name: "Electrician",
-      icon: <FaBolt />,
+      description: "Power and electrical work",
+      icon: FaBolt,
     },
     {
       name: "Plumber",
-      icon: <FaWrench />,
+      description: "Pipes and water repairs",
+      icon: FaWrench,
     },
     {
       name: "Carpenter",
-      icon: <FaHammer />,
+      description: "Furniture and woodwork",
+      icon: FaHammer,
     },
     {
       name: "Cleaner",
-      icon: <FaBroom />,
+      description: "A cleaner, fresher space",
+      icon: FaBroom,
     },
     {
       name: "Tutor",
-      icon: <FaBook />,
+      description: "Learning and education",
+      icon: FaBook,
     },
     {
       name: "Painter",
-      icon: <FaPaintRoller />,
+      description: "Refresh your walls",
+      icon: FaPaintRoller,
     },
   ];
 
   return (
-    <section className="bg-gray-100 py-20 px-6">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-black mb-14">
-          Categories
-        </h2>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {categories.map((category, index) => {
+        const Icon = category.icon;
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {categories.map((category) => (
-            <Link
-              key={category.name}
-              to={`/workers?category=${encodeURIComponent(
-                category.name
-              )}`}
-              className="group bg-white rounded-xl shadow-md p-8 flex flex-col items-center justify-center gap-4 transition duration-300 hover:-translate-y-2 hover:shadow-xl"
-            >
-              <div className="text-4xl text-orange-500 transition duration-300 group-hover:scale-110">
-                {category.icon}
-              </div>
+        return (
+          <Link
+            key={category.name}
+            to={`/workers?category=${encodeURIComponent(category.name)}`}
+            className="group relative flex min-h-36 items-center gap-5 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-950/5 sm:p-6"
+          >
+            <span className="absolute -right-5 -top-5 h-20 w-20 rounded-full bg-orange-50 transition duration-300 group-hover:scale-150" />
 
-              <h3 className="text-lg font-semibold text-black">
+            <span className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#171717] text-xl text-orange-400 transition duration-300 group-hover:bg-orange-500 group-hover:text-white">
+              <Icon />
+            </span>
+
+            <span className="relative min-w-0 flex-1">
+              <span className="block text-base font-bold text-[#171717] transition group-hover:text-orange-600">
                 {category.name}
-              </h3>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
+              </span>
+
+              <span className="mt-2 block text-xs leading-5 text-gray-500 sm:text-sm">
+                {category.description}
+              </span>
+            </span>
+
+            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-xs text-gray-500 transition duration-300 group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
+              {index < 6 ? <FaArrowUp className="rotate-45" /> : null}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
   );
 }
 
