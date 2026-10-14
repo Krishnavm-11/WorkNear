@@ -1,4 +1,3 @@
-
 import User from "../models/User.js";
 import LoginOtp from "../models/LoginOtp.js";
 import RegisterOtp from "../models/RegisterOtp.js";
@@ -128,19 +127,17 @@ export const registerUser = async (req, res) => {
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
         runValidators: true,
         setDefaultsOnInsert: true,
       }
     );
 
     try {
-      // Do not return success until the mail server accepts the email.
       await sendOtpEmail(normalizedEmail, otp, "register");
     } catch (emailError) {
       console.error("Registration email error:", emailError.message);
 
-      // Remove the pending record so the user can retry immediately.
       await RegisterOtp.deleteOne({ email: normalizedEmail });
 
       return res.status(502).json({
@@ -149,7 +146,10 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    console.log("Registration OTP accepted by email server:", normalizedEmail);
+    console.log(
+      "Registration OTP accepted by email server:",
+      normalizedEmail
+    );
 
     return res.status(200).json({
       message: "Verification code sent. It expires in 5 minutes.",
@@ -182,6 +182,7 @@ export const verifyRegisterOtp = async (req, res) => {
     }
 
     const normalizedEmail = normalizeEmail(email);
+
     const pending = await RegisterOtp.findOne({
       email: normalizedEmail,
     });
@@ -238,7 +239,7 @@ export const verifyRegisterOtp = async (req, res) => {
       });
     }
 
-    // The actual user is created only after OTP verification.
+    // Create the account only after successful OTP verification.
     const user = await User.create({
       name: pending.name,
       email: normalizedEmail,
@@ -285,6 +286,7 @@ export const resendRegisterOtp = async (req, res) => {
     }
 
     const normalizedEmail = normalizeEmail(email);
+
     const pending = await RegisterOtp.findOne({
       email: normalizedEmail,
     });
@@ -324,7 +326,11 @@ export const resendRegisterOtp = async (req, res) => {
     try {
       await sendOtpEmail(normalizedEmail, otp, "register");
     } catch (emailError) {
-      console.error("Registration resend email error:", emailError.message);
+      console.error(
+        "Registration resend email error:",
+        emailError.message
+      );
+
       await RegisterOtp.deleteOne({ _id: pending._id });
 
       return res.status(502).json({
@@ -410,7 +416,7 @@ export const loginUser = async (req, res) => {
       },
       {
         upsert: true,
-        new: true,
+        returnDocument: "after",
         runValidators: true,
         setDefaultsOnInsert: true,
       }
@@ -420,6 +426,7 @@ export const loginUser = async (req, res) => {
       await sendOtpEmail(normalizedEmail, otp, "login");
     } catch (emailError) {
       console.error("Login OTP email error:", emailError.message);
+
       await LoginOtp.deleteOne({ email: normalizedEmail });
 
       return res.status(502).json({
@@ -458,6 +465,7 @@ export const verifyLoginOtp = async (req, res) => {
     }
 
     const normalizedEmail = normalizeEmail(email);
+
     const record = await LoginOtp.findOne({
       email: normalizedEmail,
     });
