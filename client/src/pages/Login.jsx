@@ -19,63 +19,77 @@ function Login() {
 
   const [step, setStep] = useState("credentials");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error");
 
-  // Step 1: Validate credentials and request OTP.
+  const showMessage = (text, type = "error") => {
+    setMessage(text);
+    setMessageType(type);
+  };
+
+  // Step 1: Check credentials and send login OTP.
   const handleLogin = async (e) => {
     e.preventDefault();
 
     try {
       setLoading(true);
+      setMessage("");
 
       const normalizedEmail = email.trim().toLowerCase();
 
-      const res = await api.post("/auth/login", {
+      const res = await api.post("/auth/login/send-otp", {
         email: normalizedEmail,
         password,
       });
 
       setEmail(normalizedEmail);
+      setOtp("");
       setStep("otp");
 
-      alert(
-        res.data.message ||
-          "OTP sent to your email."
+      showMessage(
+        res.data.message || "OTP sent to your email.",
+        "success"
       );
     } catch (error) {
-      alert(
+      showMessage(
         error.response?.data?.message ||
-          "Unable to start login."
+          "Unable to start login. Please try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: Verify OTP and log in.
+  // Step 2: Verify OTP and complete login.
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
 
     if (!/^\d{6}$/.test(otp)) {
-      alert("Please enter the 6-digit OTP.");
+      showMessage("Please enter the 6-digit OTP.");
       return;
     }
 
     try {
       setLoading(true);
+      setMessage("");
 
       const res = await api.post("/auth/verify-otp", {
-        email,
+        email: email.trim().toLowerCase(),
         otp,
       });
 
-      // Save authentication only after successful verification.
+      if (!res.data.token || !res.data.user) {
+        showMessage("Login response is incomplete. Please try again.");
+        return;
+      }
+
       localStorage.setItem("token", res.data.token);
       localStorage.setItem(
         "user",
         JSON.stringify(res.data.user)
       );
 
-      alert("Login successful!");
+      showMessage("Login successful!", "success");
 
       if (res.data.user.role === "worker") {
         navigate("/worker-dashboard");
@@ -83,37 +97,40 @@ function Login() {
         navigate("/profile");
       }
     } catch (error) {
-      alert(
+      showMessage(
         error.response?.data?.message ||
-          "OTP verification failed."
+          "OTP verification failed. Please try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // Resend OTP by checking the credentials again.
+  // Resend login OTP using the same backend endpoint.
   const handleResendOtp = async () => {
     try {
       setLoading(true);
+      setMessage("");
 
-      const res = await api.post("/auth/login", {
-        email,
+      const res = await api.post("/auth/login/send-otp", {
+        email: email.trim().toLowerCase(),
         password,
       });
 
       setOtp("");
 
-      alert(res.data.message || "A new OTP was sent.");
+      showMessage(
+        res.data.message || "A new OTP was sent to your email.",
+        "success"
+      );
     } catch (error) {
-      const retryAfter =
-        error.response?.data?.retryAfter;
+      const retryAfter = error.response?.data?.retryAfter;
 
-      alert(
+      showMessage(
         retryAfter
-          ? `Please wait ${retryAfter} seconds before trying again.`
+          ? `Please wait ${retryAfter} seconds before requesting another OTP.`
           : error.response?.data?.message ||
-              "Could not resend OTP."
+              "Could not resend OTP. Please try again."
       );
     } finally {
       setLoading(false);
@@ -141,6 +158,20 @@ function Login() {
         {/* Login and OTP forms */}
         <div className="p-6 sm:p-10 flex flex-col justify-center">
 
+          {message && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`mb-5 rounded-lg border p-3 text-sm ${
+                messageType === "success"
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-red-200 bg-red-50 text-red-700"
+              }`}
+            >
+              {message}
+            </div>
+          )}
+
           {step === "credentials" ? (
             <>
               <h2 className="text-3xl font-bold text-center mb-3">
@@ -161,9 +192,7 @@ function Login() {
                     autoComplete="email"
                     className="w-full p-4 outline-none"
                     value={email}
-                    onChange={(e) =>
-                      setEmail(e.target.value)
-                    }
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -177,9 +206,7 @@ function Login() {
                     autoComplete="current-password"
                     className="w-full p-4 outline-none"
                     value={password}
-                    onChange={(e) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                   />
                 </div>
@@ -220,6 +247,7 @@ function Login() {
                 onClick={() => {
                   setStep("credentials");
                   setOtp("");
+                  setMessage("");
                 }}
                 className="flex items-center gap-2 text-gray-600 hover:text-orange-500 mb-7 self-start"
               >
@@ -254,9 +282,7 @@ function Login() {
                   value={otp}
                   onChange={(e) =>
                     setOtp(
-                      e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 6)
+                      e.target.value.replace(/\D/g, "").slice(0, 6)
                     )
                   }
                   className="w-full border rounded-lg p-4 text-center text-2xl tracking-[0.5em] mb-5 focus:outline-none focus:border-orange-500"
@@ -278,7 +304,7 @@ function Login() {
                 disabled={loading}
                 className="w-full text-orange-500 font-semibold mt-5 hover:text-orange-600 disabled:opacity-60"
               >
-                Resend OTP
+                {loading ? "Please wait..." : "Resend OTP"}
               </button>
 
               <p className="text-center text-sm text-gray-500 mt-5">
