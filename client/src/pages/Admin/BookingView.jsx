@@ -30,13 +30,13 @@ function BookingView() {
 
       const res = await api.get("/admin/bookings");
 
-      setBookings(
-        Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.bookings)
-            ? res.data.bookings
-            : []
-      );
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.bookings)
+          ? res.data.bookings
+          : [];
+
+      setBookings(data);
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
 
@@ -151,9 +151,10 @@ function BookingView() {
   };
 
   return (
-    <main className="min-h-full bg-[#f7f7f8] px-4 py-7 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f7f7f8] px-4 py-7 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        {/* Page heading */}
+
+        {/* Heading */}
         <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-orange-600">
@@ -166,7 +167,7 @@ function BookingView() {
             </h1>
 
             <p className="mt-2 text-sm leading-6 text-gray-500 sm:text-base">
-              Monitor customer requests and keep track of service bookings.
+              Monitor customer requests and manage service bookings.
             </p>
           </div>
 
@@ -218,7 +219,7 @@ function BookingView() {
           })}
         </section>
 
-        {/* Search and filter */}
+        {/* Search and filters */}
         <section className="mb-6 rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -268,7 +269,7 @@ function BookingView() {
           </div>
         </section>
 
-        {/* Error state */}
+        {/* Error message */}
         {errorMessage && (
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -369,7 +370,7 @@ function BookingView() {
                     key={booking._id}
                     className="group overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-xl hover:shadow-gray-200/60"
                   >
-                    {/* Card header */}
+                    {/* Card heading */}
                     <div className="flex items-start justify-between gap-3 border-b border-gray-100 p-5 sm:p-6">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition group-hover:bg-orange-500 group-hover:text-white">
@@ -397,7 +398,7 @@ function BookingView() {
                       </span>
                     </div>
 
-                    {/* Booking details */}
+                    {/* Booking information */}
                     <div className="space-y-4 p-5 sm:p-6">
                       <div className="flex items-start gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
@@ -493,7 +494,7 @@ function BookingView() {
 
         <footer className="mt-10 border-t border-gray-200 py-5 text-center">
           <p className="text-xs text-gray-400">
-            WorkNear Admin Dashboard · Booking Management
+            WorkNear · Booking Management
           </p>
         </footer>
       </div>

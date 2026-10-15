@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,6 +13,7 @@ import {
   FaCheckCircle,
   FaUserTie,
   FaShieldAlt,
+  FaPhone,
 } from "react-icons/fa";
 import api from "../services/api";
 
@@ -21,6 +23,7 @@ function Register() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     role: "user",
   });
@@ -50,11 +53,12 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    const normalizedEmail = formData.email.trim().toLowerCase();
     const normalizedName = formData.name.trim();
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    const normalizedPhone = formData.phone.trim();
 
-    if (normalizedName.length < 2) {
-      showMessage("Please enter your full name.");
+    if (normalizedName.length < 2 || normalizedName.length > 80) {
+      showMessage("Name must contain between 2 and 80 characters.");
       return;
     }
 
@@ -63,20 +67,37 @@ function Register() {
       return;
     }
 
+    // A phone number is required for worker registration
+    if (formData.role === "worker") {
+      const phoneDigits = normalizedPhone.replace(/\D/g, "");
+
+      if (
+        !/^\+?[0-9\s()-]+$/.test(normalizedPhone) ||
+        phoneDigits.length < 10 ||
+        phoneDigits.length > 15
+      ) {
+        showMessage("Please enter a valid worker phone number.");
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setMessage("");
 
       const res = await api.post("/auth/register/send-otp", {
-        ...formData,
         name: normalizedName,
         email: normalizedEmail,
+        password: formData.password,
+        role: formData.role,
+        phone: formData.role === "worker" ? normalizedPhone : "",
       });
 
       setFormData((prev) => ({
         ...prev,
         name: normalizedName,
         email: normalizedEmail,
+        phone: normalizedPhone,
       }));
 
       setOtp("");
@@ -134,7 +155,7 @@ function Register() {
         return;
       }
 
-      // If the backend verifies registration without logging in
+      // Existing backend verifies registration without logging in
       showMessage(
         res.data.message ||
           "Registration verified. Please log in to continue.",
@@ -154,16 +175,18 @@ function Register() {
     }
   };
 
-  // Resend OTP
+  // Resend registration OTP
   const handleResendOtp = async () => {
     try {
       setLoading(true);
       setMessage("");
 
       const res = await api.post("/auth/register/send-otp", {
-        ...formData,
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+        phone: formData.role === "worker" ? formData.phone.trim() : "",
       });
 
       setOtp("");
@@ -293,6 +316,7 @@ function Register() {
                 )}
 
                 <form onSubmit={handleRegister} className="space-y-4">
+                  {/* Full name */}
                   <div>
                     <label
                       htmlFor="register-name"
@@ -314,10 +338,12 @@ function Register() {
                         className="w-full bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-gray-400"
                         required
                         minLength={2}
+                        maxLength={80}
                       />
                     </div>
                   </div>
 
+                  {/* Email */}
                   <div>
                     <label
                       htmlFor="register-email"
@@ -342,6 +368,40 @@ function Register() {
                     </div>
                   </div>
 
+                  {/* Phone: workers only */}
+                  {formData.role === "worker" && (
+                    <div>
+                      <label
+                        htmlFor="register-phone"
+                        className="mb-2 block text-sm font-semibold text-gray-700"
+                      >
+                        Phone number
+                      </label>
+
+                      <div className="flex items-center rounded-xl border border-gray-200 bg-[#faf9f6] transition focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-500/10">
+                        <FaPhone className="ml-4 shrink-0 text-sm text-gray-400" />
+                        <input
+                          id="register-phone"
+                          type="tel"
+                          name="phone"
+                          placeholder="Enter your phone number"
+                          autoComplete="tel"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          className="w-full bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-gray-400"
+                          required
+                          pattern="[+]?[0-9\s()-]{10,18}"
+                          title="Enter a valid phone number"
+                        />
+                      </div>
+
+                      <p className="mt-2 text-xs leading-5 text-gray-500">
+                        Customers can contact you after you accept their booking.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Password */}
                   <div>
                     <label
                       htmlFor="register-password"
@@ -368,7 +428,9 @@ function Register() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                         className="mr-4 text-gray-400 transition hover:text-orange-500"
                       >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -376,6 +438,7 @@ function Register() {
                     </div>
                   </div>
 
+                  {/* Role selection */}
                   <div>
                     <label className="mb-3 block text-sm font-semibold text-gray-700">
                       I want to join as
@@ -385,7 +448,10 @@ function Register() {
                       <button
                         type="button"
                         onClick={() =>
-                          setFormData((prev) => ({ ...prev, role: "user" }))
+                          setFormData((prev) => ({
+                            ...prev,
+                            role: "user",
+                          }))
                         }
                         aria-pressed={formData.role === "user"}
                         className={`rounded-xl border p-4 text-left transition ${
@@ -410,7 +476,10 @@ function Register() {
                       <button
                         type="button"
                         onClick={() =>
-                          setFormData((prev) => ({ ...prev, role: "worker" }))
+                          setFormData((prev) => ({
+                            ...prev,
+                            role: "worker",
+                          }))
                         }
                         aria-pressed={formData.role === "worker"}
                         className={`rounded-xl border p-4 text-left transition ${
@@ -434,12 +503,14 @@ function Register() {
                     </div>
                   </div>
 
+                  {/* Submit registration */}
                   <button
                     type="submit"
                     disabled={loading}
                     className="group flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/15 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? "Sending verification code..." : "Create account"}
+
                     {!loading && (
                       <FaArrowRight className="transition group-hover:translate-x-1" />
                     )}
@@ -463,6 +534,7 @@ function Register() {
               </>
             ) : (
               <>
+                {/* OTP verification */}
                 <button
                   type="button"
                   onClick={goBackToRegistration}
@@ -550,7 +622,9 @@ function Register() {
                   disabled={loading}
                   className="mt-5 w-full rounded-lg py-2 text-sm font-bold text-orange-600 transition hover:text-orange-700 disabled:opacity-50"
                 >
-                  {loading ? "Please wait..." : "Didn't receive the code? Resend OTP"}
+                  {loading
+                    ? "Please wait..."
+                    : "Didn't receive the code? Resend OTP"}
                 </button>
               </>
             )}

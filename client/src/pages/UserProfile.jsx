@@ -1,36 +1,55 @@
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
-  FaTools,
   FaHome,
-  FaUser,
   FaCalendarAlt,
-  FaBookmark,
+  FaHeart,
+  FaUser,
   FaSignOutAlt,
   FaBars,
   FaTimes,
+  FaTools,
   FaClock,
   FaCheckCircle,
-  FaClipboardList,
-  FaArrowRight,
+  FaHourglassHalf,
+  FaSearch,
   FaStar,
   FaExclamationCircle,
-  FaSyncAlt,
+  FaArrowRight,
+  FaMapMarkerAlt,
+  FaPhone,
+  FaEnvelope,
+  FaEdit,
+  FaSave,
+  FaTimesCircle,
 } from "react-icons/fa";
-
 import api from "../services/api";
 
-function UserProfile() {
+const UserProfile = () => {
+  const location = useLocation();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [profile, setProfile] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
 
-  // Fetch the customer's bookings
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+
+  // Fetch customer bookings
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -40,11 +59,11 @@ function UserProfile() {
 
       const bookingData = Array.isArray(response.data)
         ? response.data
-        : response.data.bookings || [];
+        : response.data?.bookings || [];
 
       setBookings(bookingData);
     } catch (err) {
-      console.error("Failed to load bookings:", err);
+      console.error("Error fetching bookings:", err);
 
       setError(
         err.response?.data?.message ||
@@ -59,618 +78,1036 @@ function UserProfile() {
     fetchBookings();
   }, []);
 
-  // Booking statistics
+  // Fetch customer profile from MongoDB
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setProfileLoading(true);
+        setProfileError("");
+
+        const response = await api.get("/auth/profile");
+        const savedUser = response.data?.user;
+
+        if (!savedUser) {
+          throw new Error("Profile details were not returned.");
+        }
+
+        const profileData = {
+          name: savedUser.name || "",
+          phone: savedUser.phone || "",
+          email: savedUser.email || "",
+          address: savedUser.address || "",
+        };
+
+        setProfile(profileData);
+
+        // Keep the local user details synchronized
+        const localUser = JSON.parse(
+          localStorage.getItem("user") || "{}"
+        );
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...localUser,
+            ...savedUser,
+          })
+        );
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+
+        // Show existing local details if the API fails
+        const localUser = JSON.parse(
+          localStorage.getItem("user") || "{}"
+        );
+
+        setProfile({
+          name: localUser.name || "",
+          phone: localUser.phone || "",
+          email: localUser.email || "",
+          address: localUser.address || "",
+        });
+
+        setProfileError(
+          err.response?.data?.message ||
+            "Unable to load the latest profile. You can retry below."
+        );
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  // Scroll to dashboard sections from sidebar links
+  useEffect(() => {
+    if (!location.hash) return;
+
+    const sectionId = location.hash.slice(1);
+
+    const timer = setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [location.hash, loading, profileLoading]);
+
   const totalBookings = bookings.length;
 
-  const pendingBookings = bookings.filter(
-    (booking) => booking.status?.toLowerCase() === "pending"
+  const pendingBookings = bookings.filter((booking) =>
+    ["pending", "accepted"].includes(
+      booking.status?.toLowerCase()
+    )
   ).length;
 
   const completedBookings = bookings.filter(
     (booking) => booking.status?.toLowerCase() === "completed"
   ).length;
 
-  // Filter bookings by status
-  const filteredBookings =
-    activeFilter === "All"
-      ? bookings
-      : bookings.filter(
-          (booking) =>
-            booking.status?.toLowerCase() ===
-            activeFilter.toLowerCase()
-        );
+  // Filter and search bookings
+  const filteredBookings = bookings.filter((booking) => {
+    const matchesFilter =
+      activeFilter === "All" ||
+      booking.status?.toLowerCase() === activeFilter.toLowerCase();
 
-  // Status badge styles
-  const getStatusStyle = (status) => {
-    switch (status?.toLowerCase()) {
-      case "completed":
-        return "bg-emerald-50 text-emerald-700 border-emerald-100";
+    const workerName =
+      booking.worker?.user?.name ||
+      booking.worker?.name ||
+      "";
 
-      case "pending":
-        return "bg-amber-50 text-amber-700 border-amber-100";
+    const category =
+      booking.worker?.category ||
+      booking.worker?.skill ||
+      "";
 
-      case "cancelled":
-        return "bg-red-50 text-red-700 border-red-100";
+    const problem = booking.problem || "";
 
-      case "accepted":
-        return "bg-blue-50 text-blue-700 border-blue-100";
+    const matchesSearch = `${workerName} ${category} ${problem}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
 
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
-  };
+    return matchesFilter && matchesSearch;
+  });
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
-
-  // Logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "/login";
   };
 
-  // Sidebar link component
-  const SidebarLink = ({
-    to,
-    icon: Icon,
-    children,
-    active = false,
-  }) => (
-    <Link
-      to={to}
-      onClick={closeSidebar}
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-        active
-          ? "bg-orange-500 text-white shadow-lg shadow-orange-950/20"
-          : "text-gray-400 hover:bg-white/10 hover:text-white"
-      }`}
-    >
-      <Icon className="text-base" />
+  const handleProfileChange = (event) => {
+    const { name, value } = event.target;
 
-      <span>{children}</span>
+    setProfile((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
 
-      {active && (
-        <FaArrowRight className="ml-auto text-xs" />
-      )}
-    </Link>
-  );
+  const handleProfileSave = async (event) => {
+    event.preventDefault();
+
+    setSavingProfile(true);
+    setProfileError("");
+    setProfileMessage("");
+
+    try {
+      const response = await api.put("/auth/profile", profile);
+      const savedUser = response.data?.user;
+
+      if (!savedUser) {
+        throw new Error("The server did not return the updated profile.");
+      }
+
+      const updatedProfile = {
+        name: savedUser.name || "",
+        phone: savedUser.phone || "",
+        email: savedUser.email || "",
+        address: savedUser.address || "",
+      };
+
+      setProfile(updatedProfile);
+
+      const localUser = JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...localUser,
+          ...savedUser,
+        })
+      );
+
+      setEditingProfile(false);
+      setProfileMessage("Your profile has been saved successfully.");
+
+      // Refresh bookings to use the latest profile details
+      await fetchBookings();
+    } catch (err) {
+      console.error("Error saving profile:", err);
+
+      setProfileError(
+        err.response?.data?.message ||
+          err.message ||
+          "Unable to save your profile. Please try again."
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    const localUser = JSON.parse(
+      localStorage.getItem("user") || "{}"
+    );
+
+    setProfile({
+      name: localUser.name || profile.name,
+      phone: localUser.phone || profile.phone,
+      email: localUser.email || profile.email,
+      address: localUser.address || profile.address,
+    });
+
+    setEditingProfile(false);
+    setProfileError("");
+    setProfileMessage("");
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status?.toLowerCase()) {
+      case "completed":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+
+      case "accepted":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+
+      case "rejected":
+        return "bg-red-50 text-red-700 border-red-200";
+
+      case "cancelled":
+        return "bg-gray-100 text-gray-600 border-gray-200";
+
+      default:
+        return "bg-amber-50 text-amber-700 border-amber-200";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "completed":
+      case "accepted":
+        return <FaCheckCircle />;
+
+      case "rejected":
+      case "cancelled":
+        return <FaExclamationCircle />;
+
+      default:
+        return <FaHourglassHalf />;
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "Date not available";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "Date not available";
+    }
+
+    return parsedDate.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const SidebarLink = ({ to, icon, children }) => {
+    const isBookingsLink = to === "/profile#my-bookings";
+    const isProfileLink = to === "/profile#my-profile";
+    const isSavedWorkersLink = to === "/saved-workers";
+
+    const isActive =
+      (isBookingsLink && location.hash === "#my-bookings") ||
+      (isProfileLink && location.hash === "#my-profile") ||
+      (isSavedWorkersLink &&
+        location.pathname === "/saved-workers");
+
+    return (
+      <Link
+        to={to}
+        onClick={() => setSidebarOpen(false)}
+        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+          isActive
+            ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+            : "text-gray-400 hover:bg-white/10 hover:text-white"
+        }`}
+      >
+        {icon}
+        <span>{children}</span>
+      </Link>
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] text-gray-900">
-      {/* Mobile sidebar overlay */}
+    <div className="min-h-screen bg-[#f7f7f5] text-gray-900">
       {sidebarOpen && (
         <button
           type="button"
-          aria-label="Close sidebar"
-          onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[#171717] px-5 py-6 text-white transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen
-            ? "translate-x-0"
-            : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[#171717] px-5 py-6 transition-transform duration-300 lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
-        <div className="mb-10 flex items-center gap-3 px-2">
+        <div className="mb-10 flex items-center justify-between px-2">
           <Link
-            to="/"
-            onClick={closeSidebar}
+            to="/profile"
             className="flex items-center gap-3"
+            onClick={() => setSidebarOpen(false)}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500 text-xl">
-              <FaTools />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500 text-white">
+              <FaTools size={20} />
             </div>
 
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight">
+              <h1 className="text-xl font-extrabold tracking-tight text-white">
                 Work<span className="text-orange-500">Near</span>
               </h1>
 
-              <p className="mt-0.5 text-[10px] uppercase tracking-[0.25em] text-gray-500">
-                Customer space
+              <p className="mt-0.5 text-xs text-gray-400">
+                Customer dashboard
               </p>
             </div>
           </Link>
 
           <button
             type="button"
-            aria-label="Close menu"
-            onClick={closeSidebar}
-            className="ml-auto rounded-lg p-2 text-gray-400 hover:bg-white/10 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            className="text-gray-400 hover:text-white lg:hidden"
+            aria-label="Close sidebar"
           >
-            <FaTimes />
+            <FaTimes size={20} />
           </button>
         </div>
 
-        {/* Sidebar menu */}
-        <p className="mb-3 px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
-          Workspace
+        <p className="mb-3 px-4 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+          Menu
         </p>
 
         <nav className="space-y-2">
-          <SidebarLink
-            to="/profile"
-            icon={FaHome}
-            active
-          >
+          <SidebarLink to="/profile" icon={<FaHome size={17} />}>
             Dashboard
           </SidebarLink>
 
           <SidebarLink
-            to="/profile"
-            icon={FaCalendarAlt}
+            to="/profile#my-bookings"
+            icon={<FaCalendarAlt size={17} />}
           >
             My Bookings
           </SidebarLink>
 
           <SidebarLink
-            to="/profile"
-            icon={FaBookmark}
+            to="/saved-workers"
+            icon={<FaHeart size={17} />}
           >
             Saved Workers
           </SidebarLink>
 
           <SidebarLink
-            to="/profile"
-            icon={FaUser}
+            to="/profile#my-profile"
+            icon={<FaUser size={17} />}
           >
             My Profile
           </SidebarLink>
         </nav>
 
-        {/* Logout */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="mt-5 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 transition hover:bg-red-500/10 hover:text-red-400"
-        >
-          <FaSignOutAlt />
-          Logout
-        </button>
-      </aside>
-
-      {/* Main dashboard */}
-      <main className="min-h-screen lg:ml-72">
-        <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-7 sm:py-9 lg:px-10">
-
-          {/* Mobile dashboard heading */}
-          <div className="mb-7 flex items-center gap-4">
-            <button
-              type="button"
-              aria-label="Open sidebar"
-              onClick={() => setSidebarOpen(true)}
-              className="rounded-xl border border-gray-200 bg-white p-3 text-gray-700 lg:hidden"
-            >
-              <FaBars />
-            </button>
-
-            <div>
-              <p className="text-xs text-gray-500">
-                Customer workspace
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold sm:text-2xl">
-                My Dashboard
-              </h2>
+        <div className="mt-auto border-t border-white/10 pt-5">
+          <div className="mb-4 rounded-2xl bg-white/5 p-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-lg font-bold text-white">
+              {(profile.name || "U").charAt(0).toUpperCase()}
             </div>
+
+            <p className="mt-3 truncate text-sm font-semibold text-white">
+              {profile.name || "Customer"}
+            </p>
+
+            <p className="mt-1 truncate text-xs text-gray-400">
+              {profile.email || "Welcome to WorkNear"}
+            </p>
           </div>
 
-          {/* Welcome banner */}
-          <section className="relative overflow-hidden rounded-3xl bg-[#202020] p-6 text-white sm:p-9 lg:p-10">
-            <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full border-[35px] border-orange-500/10" />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 transition hover:bg-red-500/10 hover:text-red-400"
+          >
+            <FaSignOutAlt size={17} />
+            Logout
+          </button>
+        </div>
+      </aside>
 
-            <div className="pointer-events-none absolute -bottom-24 right-20 h-48 w-48 rounded-full bg-orange-500/10 blur-2xl" />
+      {/* Main content */}
+      <main className="min-h-screen lg:ml-72">
+        <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-[#f7f7f5]/95 px-5 py-4 backdrop-blur-xl sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-xl border border-gray-200 bg-white p-3 text-gray-700 lg:hidden"
+                aria-label="Open sidebar"
+              >
+                <FaBars size={17} />
+              </button>
 
-            <div className="relative z-10 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs text-gray-300">
-                <span className="h-2 w-2 rounded-full bg-orange-500" />
-                YOUR PERSONAL WORKSPACE
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-gray-500">
+                  Customer portal
+                </p>
+
+                <h2 className="mt-1 text-lg font-bold sm:text-xl">
+                  My Dashboard
+                </h2>
               </div>
+            </div>
 
-              <h1 className="mt-5 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
-                Welcome back,
+            <Link
+              to="/"
+              className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-orange-300 hover:text-orange-600 sm:flex"
+            >
+              Find a worker
+              <FaArrowRight size={12} />
+            </Link>
+          </div>
+        </header>
+
+        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
+          {/* Welcome section */}
+          <section className="relative overflow-hidden rounded-3xl bg-[#171717] p-6 text-white sm:p-9">
+            <div className="relative z-10 max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-orange-300">
+                <span className="h-2 w-2 rounded-full bg-orange-400" />
+                Your personal dashboard
+              </span>
+
+              <h1 className="mt-5 text-3xl font-bold leading-tight sm:text-4xl">
+                Hello, {profile.name?.split(" ")[0] || "there"}!
                 <br />
-
                 <span className="text-orange-400">
-                  {user.name?.split(" ")[0] || "there"}.
+                  How can we help you today?
                 </span>
               </h1>
 
-              <p className="mt-4 max-w-lg text-sm leading-6 text-gray-400 sm:text-base">
-                Manage your service bookings and keep track
-                of your local service requests in one place.
+              <p className="mt-4 max-w-lg text-sm leading-6 text-gray-300 sm:text-base">
+                Manage your bookings, keep track of service requests, and find
+                trusted professionals near you.
+              </p>
+
+              <Link
+                to="/"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              >
+                Explore services
+                <FaArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div className="pointer-events-none absolute -right-10 -top-16 h-64 w-64 rounded-full border-[35px] border-orange-500/10 sm:right-10 sm:top-0" />
+            <div className="pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full bg-orange-500/10 blur-2xl" />
+          </section>
+
+          {/* Dashboard statistics */}
+          <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                  <FaCalendarAlt size={20} />
+                </div>
+                <span className="text-xs font-medium text-gray-400">
+                  All time
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm text-gray-500">Total bookings</p>
+              <p className="mt-1 text-3xl font-bold">{totalBookings}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                  <FaClock size={20} />
+                </div>
+                <span className="text-xs font-medium text-gray-400">
+                  In progress
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm text-gray-500">
+                Pending / accepted
+              </p>
+              <p className="mt-1 text-3xl font-bold">{pendingBookings}</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:col-span-2 xl:col-span-1">
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <FaCheckCircle size={20} />
+                </div>
+                <span className="text-xs font-medium text-gray-400">
+                  Finished
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm text-gray-500">
+                Completed bookings
+              </p>
+              <p className="mt-1 text-3xl font-bold">
+                {completedBookings}
               </p>
             </div>
           </section>
 
-          {/* Booking statistics */}
-          <section className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-
-            {/* Total bookings */}
-            <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Total Bookings
-                  </p>
-
-                  <h3 className="mt-3 text-3xl font-extrabold">
-                    {totalBookings}
-                  </h3>
-
-                  <p className="mt-2 text-xs text-gray-400">
-                    All your service requests
-                  </p>
-                </div>
-
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-lg text-orange-600">
-                  <FaClipboardList />
-                </div>
-              </div>
-            </div>
-
-            {/* Pending bookings */}
-            <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Pending Bookings
-                  </p>
-
-                  <h3 className="mt-3 text-3xl font-extrabold">
-                    {pendingBookings}
-                  </h3>
-
-                  <p className="mt-2 text-xs text-gray-400">
-                    Waiting for an update
-                  </p>
-                </div>
-
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-lg text-amber-600">
-                  <FaClock />
-                </div>
-              </div>
-            </div>
-
-            {/* Completed bookings */}
-            <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:col-span-2 sm:p-6 xl:col-span-1">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">
-                    Completed Jobs
-                  </p>
-
-                  <h3 className="mt-3 text-3xl font-extrabold">
-                    {completedBookings}
-                  </h3>
-
-                  <p className="mt-2 text-xs text-gray-400">
-                    Services completed
-                  </p>
-                </div>
-
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-lg text-emerald-600">
-                  <FaCheckCircle />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Account overview / Your Profile */}
-          <section className="mt-7">
-            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm sm:p-8">
-
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-xl font-bold text-orange-700">
-                  {user.name?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-orange-600">
-                    Account overview
-                  </p>
-
-                  <h2 className="mt-1 text-2xl font-extrabold">
-                    Your Profile
-                  </h2>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    Your personal account information.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-                <div className="rounded-xl bg-[#f7f6f2] p-4">
-                  <p className="text-xs text-gray-500">
-                    Full Name
-                  </p>
-
-                  <p className="mt-2 break-words font-semibold">
-                    {user.name || "Customer"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#f7f6f2] p-4">
-                  <p className="text-xs text-gray-500">
-                    Email Address
-                  </p>
-
-                  <p className="mt-2 break-all text-sm font-semibold">
-                    {user.email || "Not available"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-[#f7f6f2] p-4 sm:col-span-2">
-                  <p className="text-xs text-gray-500">
-                    Account Type
-                  </p>
-
-                  <p className="mt-2 font-semibold capitalize">
-                    {user.role || "Customer"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Existing bookings */}
-          <section className="mt-8" id="my-bookings">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* My Bookings */}
+          <section id="my-bookings" className="mt-10 scroll-mt-28">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
-                <h2 className="text-xl font-extrabold sm:text-2xl">
-                  Booking Details
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
+                  Service activity
+                </p>
+
+                <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+                  My Bookings
                 </h2>
 
                 <p className="mt-2 text-sm text-gray-500">
-                  View the status of your service requests.
+                  View and manage the service requests you have made.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={fetchBookings}
-                disabled={loading}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold transition hover:border-orange-300 hover:text-orange-600 disabled:opacity-50"
-              >
-                <FaSyncAlt
-                  className={loading ? "animate-spin" : ""}
+              <span className="w-fit rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600">
+                {totalBookings} {totalBookings === 1 ? "booking" : "bookings"}
+              </span>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full sm:max-w-sm">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search your bookings..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-orange-400 focus:bg-white"
                 />
-                Refresh
-              </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {["All", "Pending", "Accepted", "Completed", "Rejected"].map(
+                  (filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setActiveFilter(filter)}
+                      className={`rounded-lg px-3 py-2 text-xs font-semibold transition sm:text-sm ${
+                        activeFilter === filter
+                          ? "bg-orange-500 text-white"
+                          : "border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-600"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  )
+                )}
+              </div>
             </div>
 
-            {/* Booking filters */}
-            <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-              {[
-                "All",
-                "Pending",
-                "Accepted",
-                "Completed",
-                "Cancelled",
-              ].map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-                    activeFilter === filter
-                      ? "bg-[#202020] text-white"
-                      : "border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-600"
-                  }`}
-                >
-                  {filter}
-
-                  {filter === "All" && (
-                    <span className="ml-2 text-xs opacity-70">
-                      {totalBookings}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Loading state */}
             {loading && (
-              <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-12 text-center">
-                <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-gray-200 border-t-orange-500" />
-
-                <p className="mt-4 text-sm text-gray-500">
+              <div className="mt-6 rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
+                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-orange-100 border-t-orange-500" />
+                <p className="mt-4 text-sm font-medium text-gray-600">
                   Loading your bookings...
                 </p>
               </div>
             )}
 
-            {/* Error state */}
             {!loading && error && (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-6">
+              <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6">
                 <div className="flex items-start gap-3">
-                  <FaExclamationCircle className="mt-1 text-red-500" />
-
+                  <FaExclamationCircle className="mt-0.5 text-red-500" />
                   <div>
-                    <p className="font-semibold text-red-800">
-                      Could not load bookings
-                    </p>
-
-                    <p className="mt-1 text-sm text-red-700">
-                      {error}
-                    </p>
+                    <h3 className="font-semibold text-red-800">
+                      Unable to load bookings
+                    </h3>
+                    <p className="mt-1 text-sm text-red-700">{error}</p>
 
                     <button
                       type="button"
                       onClick={fetchBookings}
                       className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
                     >
-                      Try Again
+                      Try again
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Empty state */}
-            {!loading &&
-              !error &&
-              filteredBookings.length === 0 && (
-                <div className="mt-5 rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-2xl text-orange-500">
-                    <FaCalendarAlt />
-                  </div>
-
-                  <h3 className="mt-5 text-lg font-bold">
-                    {bookings.length === 0
-                      ? "No bookings yet"
-                      : "No bookings in this category"}
-                  </h3>
-
-                  <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-gray-500">
-                    {bookings.length === 0
-                      ? "Your service bookings will appear here when you book a professional."
-                      : "Try selecting another status to see your bookings."}
-                  </p>
+            {!loading && !error && filteredBookings.length === 0 && (
+              <div className="mt-6 rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 text-orange-500">
+                  <FaCalendarAlt size={25} />
                 </div>
-              )}
 
-            {/* Booking cards */}
-            {!loading &&
-              !error &&
-              filteredBookings.length > 0 && (
-                <div className="mt-5 grid grid-cols-1 gap-4 2xl:grid-cols-2">
-                  {filteredBookings.map((booking) => {
-                    const worker = booking.worker;
-                    const status = booking.status || "Pending";
+                <h3 className="mt-5 text-lg font-bold">
+                  {bookings.length === 0
+                    ? "No bookings yet"
+                    : "No matching bookings"}
+                </h3>
 
-                    return (
-                      <article
-                        key={booking._id}
-                        className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md sm:p-6"
-                      >
-                        {/* Worker and status */}
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-lg text-orange-600">
-                              <FaTools />
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-gray-500">
+                  {bookings.length === 0
+                    ? "When you book a service professional, your booking details will appear here."
+                    : "Try changing the status filter or search for another booking."}
+                </p>
+
+                {bookings.length === 0 && (
+                  <Link
+                    to="/"
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                  >
+                    Find a professional
+                    <FaArrowRight size={12} />
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {!loading && !error && filteredBookings.length > 0 && (
+              <div className="mt-6 space-y-4">
+                {filteredBookings.map((booking) => {
+                  const workerName =
+                    booking.worker?.user?.name ||
+                    booking.worker?.name ||
+                    "Service professional";
+
+                  const category =
+                    booking.worker?.category ||
+                    booking.worker?.skill ||
+                    "General service";
+
+                  const status = booking.status || "Pending";
+
+                  const workerId =
+                    booking.worker?._id || booking.worker?.id;
+
+                  const workerPhone =
+                    status.toLowerCase() === "accepted"
+                      ? booking.worker?.user?.phone
+                      : "";
+
+                  return (
+                    <article
+                      key={booking._id}
+                      className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-orange-200 hover:shadow-md sm:p-6"
+                    >
+                      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 gap-4">
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+                            <FaTools size={23} />
+                          </div>
+
+                          <div className="min-w-0">
+                            <h3 className="break-words text-lg font-bold">
+                              {workerName}
+                            </h3>
+
+                            <p className="mt-1 text-sm font-medium text-orange-600">
+                              {category}
+                            </p>
+
+                            <p className="mt-2 text-xs text-gray-400">
+                              Booking ID: {booking._id}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`inline-flex w-fit shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusStyle(
+                            status
+                          )}`}
+                        >
+                          {getStatusIcon(status)}
+                          {status}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-1 gap-4 rounded-xl bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="flex items-start gap-3">
+                          <FaCalendarAlt className="mt-1 shrink-0 text-orange-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Booking date
+                            </p>
+                            <p className="mt-1 text-sm font-semibold">
+                              {formatDate(booking.date)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <FaClock className="mt-1 shrink-0 text-orange-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Preferred time
+                            </p>
+                            <p className="mt-1 text-sm font-semibold">
+                              {booking.time || "Not specified"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <FaTools className="mt-1 shrink-0 text-orange-500" />
+                          <div>
+                            <p className="text-xs text-gray-500">
+                              Service request
+                            </p>
+                            <p className="mt-1 break-words text-sm font-semibold">
+                              {booking.problem || "No description provided"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Worker phone becomes visible after acceptance */}
+                      {status.toLowerCase() === "accepted" && (
+                        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600">
+                              <FaPhone size={16} />
                             </div>
 
                             <div className="min-w-0">
-                              <h3 className="break-words font-bold">
-                                {worker?.name ||
-                                  "Service Professional"}
-                              </h3>
-
-                              <p className="mt-1 text-sm text-gray-500">
-                                {worker?.category ||
-                                  "Local service"}
+                              <p className="text-sm font-bold text-blue-900">
+                                Your booking has been accepted!
                               </p>
+
+                              <p className="mt-1 text-xs text-blue-800">
+                                You can now contact your service professional.
+                              </p>
+
+                              {workerPhone ? (
+                                <a
+                                  href={`tel:${workerPhone}`}
+                                  className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline"
+                                >
+                                  <FaPhone size={12} />
+                                  {workerPhone}
+                                </a>
+                              ) : (
+                                <p className="mt-3 text-sm text-blue-800">
+                                  The worker has not added a phone number.
+                                </p>
+                              )}
                             </div>
                           </div>
+                        </div>
+                      )}
 
-                          <span
-                            className={`rounded-full border px-3 py-1.5 text-xs font-bold capitalize ${getStatusStyle(
-                              status
-                            )}`}
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        {status.toLowerCase() === "completed" && workerId && (
+                          <Link
+                            to={`/review/${workerId}/${booking._id}`}
+                            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
                           >
-                            {status}
-                          </span>
-                        </div>
-
-                        {/* Booking information */}
-                        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="flex items-start gap-2 text-sm text-gray-600">
-                            <FaCalendarAlt className="mt-0.5 shrink-0 text-orange-500" />
-
-                            <div>
-                              <p className="text-xs text-gray-400">
-                                Booking Date
-                              </p>
-
-                              <p className="mt-1 font-medium">
-                                {booking.date
-                                  ? new Date(
-                                      booking.date
-                                    ).toLocaleDateString("en-IN", {
-                                      day: "numeric",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "Not specified"}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-start gap-2 text-sm text-gray-600">
-                            <FaClock className="mt-0.5 shrink-0 text-orange-500" />
-
-                            <div>
-                              <p className="text-xs text-gray-400">
-                                Preferred Time
-                              </p>
-
-                              <p className="mt-1 font-medium">
-                                {booking.time || "Not specified"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Problem details */}
-                        {booking.problem && (
-                          <div className="mt-4 rounded-xl bg-[#f7f6f2] p-4">
-                            <p className="text-xs font-semibold text-gray-500">
-                              Service Details
-                            </p>
-
-                            <p className="mt-1 break-words text-sm leading-6 text-gray-700">
-                              {booking.problem}
-                            </p>
-                          </div>
+                            <FaStar size={13} />
+                            Leave a review
+                          </Link>
                         )}
 
-                        {/* Existing booking actions */}
-                        <div className="mt-5 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-                          {status.toLowerCase() === "completed" &&
-                            worker?._id && (
-                              <Link
-                                to={`/review/${worker._id}/${booking._id}`}
-                                className="inline-flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"
-                              >
-                                <FaStar />
-                                Write a Review
-                              </Link>
-                            )}
-
-                          {worker?._id && (
-                            <Link
-                              to={`/register-complaint/${worker._id}/${booking._id}`}
-                              className="rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 transition hover:bg-red-50 hover:text-red-600"
-                            >
-                              Report an Issue
-                            </Link>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
+                        {workerId && (
+                          <Link
+                            to={`/register-complaint/${workerId}/${booking._id}`}
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
+                          >
+                            <FaExclamationCircle size={13} />
+                            Raise a complaint
+                          </Link>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
-          {/* Footer */}
-          <footer className="mt-10 border-t border-gray-200 py-6 text-center text-xs text-gray-400">
-            WorkNear Customer Dashboard
+          {/* My Profile */}
+          <section id="my-profile" className="mt-10 scroll-mt-28">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+                    <FaUser size={20} />
+                  </div>
+
+                  <div>
+                    <h2 className="text-xl font-bold">My Profile</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Manage your contact information for bookings.
+                    </p>
+                  </div>
+                </div>
+
+                {!editingProfile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileMessage("");
+                      setProfileError("");
+                      setEditingProfile(true);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
+                  >
+                    <FaEdit size={13} />
+                    Edit profile
+                  </button>
+                )}
+              </div>
+
+              {profileMessage && (
+                <p
+                  role="status"
+                  className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700"
+                >
+                  {profileMessage}
+                </p>
+              )}
+
+              {profileError && (
+                <div
+                  role="alert"
+                  className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700"
+                >
+                  {profileError}
+
+                  {!editingProfile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProfile(true);
+                        setProfileError("");
+                      }}
+                      className="ml-2 font-bold underline"
+                    >
+                      Edit profile
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {profileLoading ? (
+                <p className="mt-6 text-sm text-gray-500">
+                  Loading your profile...
+                </p>
+              ) : editingProfile ? (
+                <form
+                  onSubmit={handleProfileSave}
+                  className="mt-6 space-y-5"
+                >
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      <label
+                        htmlFor="profile-name"
+                        className="mb-2 block text-sm font-medium text-gray-700"
+                      >
+                        Full name
+                      </label>
+
+                      <input
+                        id="profile-name"
+                        name="name"
+                        type="text"
+                        value={profile.name}
+                        onChange={handleProfileChange}
+                        required
+                        minLength={2}
+                        maxLength={80}
+                        placeholder="Enter your full name"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-orange-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="profile-phone"
+                        className="mb-2 block text-sm font-medium text-gray-700"
+                      >
+                        Phone number
+                      </label>
+
+                      <input
+                        id="profile-phone"
+                        name="phone"
+                        type="tel"
+                        value={profile.phone}
+                        onChange={handleProfileChange}
+                        required
+                        maxLength={20}
+                        placeholder="Enter your phone number"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-orange-400"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label
+                        htmlFor="profile-email"
+                        className="mb-2 block text-sm font-medium text-gray-700"
+                      >
+                        Email address
+                      </label>
+
+                      <input
+                        id="profile-email"
+                        name="email"
+                        type="email"
+                        value={profile.email}
+                        onChange={handleProfileChange}
+                        required
+                        placeholder="Enter your email address"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-orange-400"
+                      />
+
+                      <p className="mt-2 text-xs text-gray-500">
+                        Changing your email here does not verify ownership
+                        of the new email address.
+                      </p>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label
+                        htmlFor="profile-address"
+                        className="mb-2 block text-sm font-medium text-gray-700"
+                      >
+                        Service address
+                      </label>
+
+                      <textarea
+                        id="profile-address"
+                        name="address"
+                        value={profile.address}
+                        onChange={handleProfileChange}
+                        required
+                        maxLength={300}
+                        rows={3}
+                        placeholder="House name or number, street, area, city"
+                        className="w-full resize-y rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-orange-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={savingProfile}
+                      className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FaSave size={14} />
+                      {savingProfile ? "Saving..." : "Save profile"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={savingProfile}
+                      onClick={handleCancelProfileEdit}
+                      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
+                    >
+                      <FaTimesCircle size={14} />
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <FaUser size={13} />
+                      <p className="text-xs font-medium uppercase tracking-wider">
+                        Full name
+                      </p>
+                    </div>
+
+                    <p className="mt-2 break-words text-sm font-semibold">
+                      {profile.name || "Not added yet"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <FaPhone size={13} />
+                      <p className="text-xs font-medium uppercase tracking-wider">
+                        Phone number
+                      </p>
+                    </div>
+
+                    <p className="mt-2 break-words text-sm font-semibold">
+                      {profile.phone || "Not added yet"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <FaEnvelope size={13} />
+                      <p className="text-xs font-medium uppercase tracking-wider">
+                        Email address
+                      </p>
+                    </div>
+
+                    <p className="mt-2 break-words text-sm font-semibold">
+                      {profile.email || "Not added yet"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <FaMapMarkerAlt size={13} />
+                      <p className="text-xs font-medium uppercase tracking-wider">
+                        Service address
+                      </p>
+                    </div>
+
+                    <p className="mt-2 break-words text-sm font-semibold">
+                      {profile.address || "Not added yet"}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <footer className="mt-10 border-t border-gray-200 py-6 text-center text-xs text-gray-500">
+            © {new Date().getFullYear()} WorkNear. Customer Dashboard.
           </footer>
         </div>
       </main>
     </div>
   );
-}
+};
 
 export default UserProfile;

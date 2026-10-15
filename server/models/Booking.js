@@ -32,11 +32,10 @@ const bookingSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Pending",
+      enum: ["Pending", "Accepted", "Rejected", "Completed"],
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const Booking = mongoose.model("Booking", bookingSchema);

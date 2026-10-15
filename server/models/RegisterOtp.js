@@ -17,7 +17,13 @@ const registerOtpSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // The password is already hashed with bcrypt.
+    phone: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // Password is already hashed with bcrypt.
     password: {
       type: String,
       required: true,

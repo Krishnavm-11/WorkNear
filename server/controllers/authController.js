@@ -1,4 +1,3 @@
-
 import User from "../models/User.js";
 import LoginOtp from "../models/LoginOtp.js";
 import RegisterOtp from "../models/RegisterOtp.js";
@@ -50,13 +49,29 @@ const resendWait = (record) => {
   );
 };
 
+// Validate phone number
+const isValidWorkerPhone = (phone) => {
+  if (typeof phone !== "string") {
+    return false;
+  }
+
+  const trimmedPhone = phone.trim();
+  const digits = trimmedPhone.replace(/\D/g, "");
+
+  return (
+    /^\+?[0-9\s()-]+$/.test(trimmedPhone) &&
+    digits.length >= 10 &&
+    digits.length <= 15
+  );
+};
+
 // ========================================
 // REGISTER: SEND OTP
 // POST /api/auth/register/send-otp
 // ========================================
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone } = req.body;
 
     if (
       typeof name !== "string" ||
@@ -92,6 +107,29 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    let normalizedPhone = "";
+
+    if (selectedRole === "worker") {
+      if (!isValidWorkerPhone(phone)) {
+        return res.status(400).json({
+          message: "Please enter a valid worker phone number.",
+        });
+      }
+
+      normalizedPhone = phone.trim();
+    } else if (typeof phone === "string") {
+      normalizedPhone = phone.trim();
+
+      if (
+        normalizedPhone &&
+        !isValidWorkerPhone(normalizedPhone)
+      ) {
+        return res.status(400).json({
+          message: "Please enter a valid phone number.",
+        });
+      }
+    }
+
     const existingUser = await findUserByEmail(normalizedEmail);
 
     if (existingUser) {
@@ -124,6 +162,7 @@ export const registerUser = async (req, res) => {
       {
         email: normalizedEmail,
         name: name.trim(),
+        phone: normalizedPhone,
         password: hashedPassword,
         role: selectedRole,
         otpHash: hashOtp(otp),
@@ -244,6 +283,8 @@ export const verifyRegisterOtp = async (req, res) => {
     const user = await User.create({
       name: pending.name,
       email: normalizedEmail,
+      phone: pending.phone || "",
+      address: "",
       password: pending.password,
       role: pending.role,
     });
@@ -256,6 +297,8 @@ export const verifyRegisterOtp = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || "",
+        address: user.address || "",
         role: user.role,
       },
     });
@@ -337,7 +380,8 @@ export const resendRegisterOtp = async (req, res) => {
       await RegisterOtp.deleteOne({ _id: pending._id });
 
       return res.status(502).json({
-        message: "Could not send the verification email. Please register again.",
+        message:
+          "Could not send the verification email. Please register again.",
       });
     }
 
@@ -547,6 +591,8 @@ export const verifyLoginOtp = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || "",
+        address: user.address || "",
         role: user.role,
       },
     });
@@ -587,7 +633,6 @@ export const adminLogin = async (req, res) => {
       });
     }
 
-    // Only existing admin accounts are allowed
     if (user.role !== "admin") {
       return res.status(403).json({
         message: "Access denied. Admin account required.",
@@ -611,6 +656,8 @@ export const adminLogin = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || "",
+        address: user.address || "",
         role: user.role,
       },
     });
@@ -619,6 +666,130 @@ export const adminLogin = async (req, res) => {
 
     return res.status(500).json({
       message: "Admin login failed. Please try again.",
+    });
+  }
+};
+
+// ========================================
+// GET MY PROFILE
+// GET /api/auth/profile
+// ========================================
+export const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select(
+      "name email phone address role"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    console.error("Get profile error:", error);
+
+    return res.status(500).json({
+      message: "Unable to load your profile.",
+    });
+  }
+};
+
+// ========================================
+// UPDATE MY PROFILE
+// PUT /api/auth/profile
+// ========================================
+export const updateMyProfile = async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof phone !== "string" ||
+      typeof address !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Name, email, phone and address must be provided.",
+      });
+    }
+
+    const trimmedName = name.trim();
+    const normalizedEmail = normalizeEmail(email);
+    const trimmedPhone = phone.trim();
+    const trimmedAddress = address.trim();
+
+    if (trimmedName.length < 2 || trimmedName.length > 80) {
+      return res.status(400).json({
+        message: "Name must be between 2 and 80 characters.",
+      });
+    }
+
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please enter a valid email address.",
+      });
+    }
+
+    if (trimmedPhone && !isValidWorkerPhone(trimmedPhone)) {
+      return res.status(400).json({
+        message: "Please enter a valid phone number.",
+      });
+    }
+
+    if (trimmedAddress.length > 300) {
+      return res.status(400).json({
+        message: "Address cannot exceed 300 characters.",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+      _id: { $ne: req.user._id },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: "Email address is already in use.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        name: trimmedName,
+        email: normalizedEmail,
+        phone: trimmedPhone,
+        address: trimmedAddress,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("name email phone address role");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      user,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: "Email address is already in use.",
+      });
+    }
+
+    return res.status(500).json({
+      message: "Unable to update your profile.",
     });
   }
 };

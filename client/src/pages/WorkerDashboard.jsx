@@ -22,6 +22,7 @@ import {
   FaArrowRight,
   FaCamera,
   FaSyncAlt,
+  FaPhone,
 } from "react-icons/fa";
 import api from "../services/api";
 
@@ -59,6 +60,7 @@ function WorkerDashboard() {
   const getWorkerProfile = useCallback(async () => {
     try {
       const res = await api.get("/workers/my-profile");
+
       const data =
         res.data?.worker ||
         res.data?.profile ||
@@ -84,8 +86,6 @@ function WorkerDashboard() {
       });
     } catch (err) {
       if (err.response?.status === 404) {
-        // A new worker has not created a profile yet.
-        // Do not display an error for this expected situation.
         setWorker(null);
         setFormData(initialForm);
       } else {
@@ -117,9 +117,11 @@ function WorkerDashboard() {
     setLoading(true);
     setError("");
 
-    await Promise.all([getWorkerProfile(), getBookings()]);
-
-    setLoading(false);
+    try {
+      await Promise.all([getWorkerProfile(), getBookings()]);
+    } finally {
+      setLoading(false);
+    }
   }, [getWorkerProfile, getBookings]);
 
   useEffect(() => {
@@ -419,15 +421,19 @@ function WorkerDashboard() {
             })}
           </nav>
 
-          {/* Back to website at the bottom of the sidebar */}
           <div className="mt-auto border-t border-white/10">
-            <Link
-              to="/"
-              className="flex items-center gap-3 px-8 py-5 text-sm text-neutral-400 transition hover:bg-white/[0.04] hover:text-white"
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.href = "/login";
+              }}
+              className="flex w-full items-center gap-3 px-8 py-5 text-left text-sm text-neutral-400 transition hover:bg-white/[0.04] hover:text-white"
             >
               <FaSignOutAlt />
-              Back to website
-            </Link>
+              Logout
+            </button>
           </div>
         </aside>
 
@@ -596,9 +602,8 @@ function WorkerDashboard() {
                       </h2>
 
                       <p className="mt-2 text-sm leading-6 text-emerald-800">
-                        Your profile has been approved. Your backend must
-                        include approved workers in the public worker list
-                        for customers to find you.
+                        Your profile has been approved and can be listed for
+                        customers according to your backend settings.
                       </p>
                     </div>
                   </div>
@@ -1070,7 +1075,7 @@ function WorkerDashboard() {
 
                           <p className="mt-1 flex items-center gap-2 text-sm font-semibold">
                             <FaMapMarkerAlt className="text-orange-500" />
-                            {worker.location}
+                            {worker.location || "Not added"}
                           </p>
                         </div>
 
@@ -1080,7 +1085,7 @@ function WorkerDashboard() {
                           </p>
 
                           <p className="mt-1 text-sm font-semibold">
-                            {worker.experience} years
+                            {worker.experience ?? 0} years
                           </p>
                         </div>
 
@@ -1091,7 +1096,7 @@ function WorkerDashboard() {
 
                           <p className="mt-1 flex items-center gap-1 text-sm font-semibold">
                             <FaRupeeSign className="text-orange-500" />
-                            {worker.pricing}
+                            {worker.pricing ?? "Not added"}
                           </p>
                         </div>
                       </div>
@@ -1122,7 +1127,7 @@ function WorkerDashboard() {
                   </h2>
 
                   <p className="mt-1 text-sm text-neutral-500">
-                    Review customer details and update each booking.
+                    Review customer details and manage each booking.
                   </p>
                 </div>
 
@@ -1167,152 +1172,200 @@ function WorkerDashboard() {
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {bookings.map((booking) => (
-                    <article
-                      key={booking._id}
-                      className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-5 py-5 sm:px-7">
-                        <div className="flex items-center gap-3">
-                          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-lg text-orange-500">
-                            <FaUser />
-                          </span>
+                  {bookings.map((booking) => {
+                    const customer = booking.user || {};
+                    const customerAddress = customer.address || "";
+                    const customerPhone = customer.phone || "";
+
+                    return (
+                      <article
+                        key={booking._id}
+                        className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-5 py-5 sm:px-7">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-lg text-orange-500">
+                              <FaUser />
+                            </span>
+
+                            <div>
+                              <h3 className="font-extrabold">
+                                {customer.name || "Customer"}
+                              </h3>
+
+                              <p className="mt-1 text-xs text-neutral-500">
+                                Booking ID: {booking._id}
+                              </p>
+                            </div>
+                          </div>
+
+                          <StatusBadge status={booking.status} />
+                        </div>
+
+                        {/* Customer contact details */}
+                        <div className="grid grid-cols-1 gap-5 border-b border-neutral-100 bg-orange-50/40 p-5 sm:grid-cols-2 sm:p-7">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500">
+                              Customer email
+                            </p>
+
+                            <p className="mt-2 break-all text-sm font-semibold">
+                              {customer.email || "Email not provided"}
+                            </p>
+                          </div>
 
                           <div>
-                            <h3 className="font-extrabold">
-                              {booking.user?.name || "Customer"}
-                            </h3>
+                            <p className="text-xs font-medium text-neutral-500">
+                              Customer phone number
+                            </p>
 
-                            <p className="mt-1 text-xs text-neutral-500">
-                              Booking ID: {booking._id}
+                            <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                              <FaPhone className="shrink-0 text-orange-500" />
+
+                              {customerPhone ? (
+                                <a
+                                  href={`tel:${customerPhone}`}
+                                  className="break-all hover:text-orange-600"
+                                >
+                                  {customerPhone}
+                                </a>
+                              ) : (
+                                "Phone number not provided"
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <p className="text-xs font-medium text-neutral-500">
+                              Customer service address
+                            </p>
+
+                            <p className="mt-2 flex items-start gap-2 text-sm font-semibold leading-6">
+                              <FaMapMarkerAlt className="mt-1 shrink-0 text-orange-500" />
+
+                              <span>
+                                {customerAddress ||
+                                  "Service address not provided"}
+                              </span>
                             </p>
                           </div>
                         </div>
 
-                        <StatusBadge status={booking.status} />
-                      </div>
+                        {/* Booking information */}
+                        <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-7 xl:grid-cols-3">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500">
+                              Booking date
+                            </p>
 
-                      <div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 sm:p-7 xl:grid-cols-3">
-                        <div>
-                          <p className="text-xs font-medium text-neutral-500">
-                            Customer email
-                          </p>
+                            <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                              <FaCalendarAlt className="text-orange-500" />
+                              {booking.date || "Not specified"}
+                            </p>
+                          </div>
 
-                          <p className="mt-2 break-all text-sm font-semibold">
-                            {booking.user?.email || "Not available"}
-                          </p>
+                          <div>
+                            <p className="text-xs font-medium text-neutral-500">
+                              Booking time
+                            </p>
+
+                            <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                              <FaClock className="text-orange-500" />
+                              {booking.time || "Not specified"}
+                            </p>
+                          </div>
+
+                          <div className="sm:col-span-2 xl:col-span-3">
+                            <p className="text-xs font-medium text-neutral-500">
+                              Customer's problem / service request
+                            </p>
+
+                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                              {booking.problem ||
+                                "No additional details provided."}
+                            </p>
+                          </div>
                         </div>
 
-                        <div>
-                          <p className="text-xs font-medium text-neutral-500">
-                            Booking date
+                        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-neutral-100 bg-neutral-50/70 px-5 py-4 sm:px-7">
+                          <p className="text-xs text-neutral-500">
+                            Update this booking when its status changes.
                           </p>
 
-                          <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                            <FaCalendarAlt className="text-orange-500" />
-                            {booking.date || "Not specified"}
-                          </p>
-                        </div>
+                          <div className="flex flex-wrap gap-2">
+                            {booking.status === "Pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={updatingBooking === booking._id}
+                                  onClick={() =>
+                                    updateBookingStatus(
+                                      booking._id,
+                                      "Rejected"
+                                    )
+                                  }
+                                  className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                >
+                                  {updatingBooking === booking._id
+                                    ? "Updating..."
+                                    : "Reject"}
+                                </button>
 
-                        <div>
-                          <p className="text-xs font-medium text-neutral-500">
-                            Booking time
-                          </p>
+                                <button
+                                  type="button"
+                                  disabled={updatingBooking === booking._id}
+                                  onClick={() =>
+                                    updateBookingStatus(
+                                      booking._id,
+                                      "Accepted"
+                                    )
+                                  }
+                                  className="rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
+                                >
+                                  {updatingBooking === booking._id
+                                    ? "Updating..."
+                                    : "Accept booking"}
+                                </button>
+                              </>
+                            )}
 
-                          <p className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                            <FaClock className="text-orange-500" />
-                            {booking.time || "Not specified"}
-                          </p>
-                        </div>
-
-                        <div className="sm:col-span-2 xl:col-span-3">
-                          <p className="text-xs font-medium text-neutral-500">
-                            Customer's problem / service request
-                          </p>
-
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                            {booking.problem ||
-                              "No additional details provided."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-neutral-100 bg-neutral-50/70 px-5 py-4 sm:px-7">
-                        <p className="text-xs text-neutral-500">
-                          Update this booking when its status changes.
-                        </p>
-
-                        <div className="flex flex-wrap gap-2">
-                          {booking.status === "Pending" && (
-                            <>
+                            {booking.status === "Accepted" && (
                               <button
                                 type="button"
                                 disabled={updatingBooking === booking._id}
                                 onClick={() =>
                                   updateBookingStatus(
                                     booking._id,
-                                    "Rejected"
+                                    "Completed"
                                   )
                                 }
-                                className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                               >
-                                Reject
-                              </button>
+                                <FaCheckCircle />
 
-                              <button
-                                type="button"
-                                disabled={updatingBooking === booking._id}
-                                onClick={() =>
-                                  updateBookingStatus(
-                                    booking._id,
-                                    "Accepted"
-                                  )
-                                }
-                                className="rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
-                              >
                                 {updatingBooking === booking._id
                                   ? "Updating..."
-                                  : "Accept booking"}
+                                  : "Mark completed"}
                               </button>
-                            </>
-                          )}
+                            )}
 
-                          {booking.status === "Accepted" && (
-                            <button
-                              type="button"
-                              disabled={updatingBooking === booking._id}
-                              onClick={() =>
-                                updateBookingStatus(
-                                  booking._id,
-                                  "Completed"
-                                )
-                              }
-                              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                            >
-                              <FaCheckCircle />
-
-                              {updatingBooking === booking._id
-                                ? "Updating..."
-                                : "Mark completed"}
-                            </button>
-                          )}
-
-                          {(booking.status === "Rejected" ||
-                            booking.status === "Completed") && (
-                            <span className="py-2 text-xs font-medium text-neutral-500">
-                              No further actions available
-                            </span>
-                          )}
+                            {(booking.status === "Rejected" ||
+                              booking.status === "Completed") && (
+                              <span className="py-2 text-xs font-medium text-neutral-500">
+                                No further actions available
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
           )}
 
-          {/* CONTACT — simplified: only the main support card */}
+          {/* CONTACT */}
           {activeTab === "contact" && (
             <section className="grid grid-cols-1 gap-6">
               <div className="relative min-h-[300px] overflow-hidden rounded-3xl bg-[#191919] p-7 text-white sm:p-10 lg:p-12">
