@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -22,6 +23,7 @@ import Workers from "./pages/Workers";
 import WorkerDetails from "./pages/WorkerDetails";
 import Booking from "./pages/Booking";
 import UserProfile from "./pages/UserProfile";
+import AddReview from "./pages/AddReview";
 import RegisterComplaint from "./pages/RegisterComplaint";
 import SavedWorkers from "./pages/SavedWorkers";
 
@@ -43,10 +45,9 @@ function AppContent() {
   const location = useLocation();
 
   // Hide Navbar and Footer on login and registration pages.
-  const isAuthPage = [
-    "/login",
-    "/register",
-  ].includes(location.pathname);
+  const isAuthPage = ["/login", "/register"].includes(
+    location.pathname
+  );
 
   // Hide Navbar and Footer on admin pages.
   const isAdminPage = [
@@ -82,7 +83,6 @@ function AppContent() {
 
       <Routes>
         {/* PUBLIC ROUTES */}
-
         <Route path="/" element={<Home />} />
 
         <Route path="/login" element={<Login />} />
@@ -94,18 +94,15 @@ function AppContent() {
         <Route path="/contact" element={<Contact />} />
 
         {/* WORKERS PAGE */}
-
         <Route path="/workers" element={<Workers />} />
 
         {/* WORKER DETAILS */}
-
         <Route
           path="/worker/:id"
           element={<WorkerDetails />}
         />
 
-        {/* USER ROUTES */}
-
+        {/* USER BOOKING */}
         <Route
           path="/booking/:id"
           element={
@@ -115,6 +112,7 @@ function AppContent() {
           }
         />
 
+        {/* USER PROFILE / DASHBOARD */}
         <Route
           path="/profile"
           element={
@@ -124,6 +122,17 @@ function AppContent() {
           }
         />
 
+        {/* ADD REVIEW - NEW ROUTE */}
+        <Route
+          path="/add-review/:workerId/:bookingId"
+          element={
+            <ProtectedRoute>
+              <AddReview />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* SAVED WORKERS */}
         <Route
           path="/saved-workers"
           element={
@@ -134,7 +143,6 @@ function AppContent() {
         />
 
         {/* REGISTER COMPLAINT */}
-
         <Route
           path="/register-complaint"
           element={
@@ -154,7 +162,6 @@ function AppContent() {
         />
 
         {/* WORKER ROUTES */}
-
         <Route
           path="/worker-dashboard"
           element={
@@ -192,14 +199,12 @@ function AppContent() {
         />
 
         {/* ADMIN LOGIN */}
-
         <Route
           path="/admin-login"
           element={<AdminLogin />}
         />
 
         {/* ADMIN ROUTES */}
-
         <Route
           path="/admin-dashboard"
           element={
@@ -246,7 +251,6 @@ function AppContent() {
         />
 
         {/* PAGE NOT FOUND */}
-
         <Route
           path="*"
           element={

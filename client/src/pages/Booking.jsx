@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   FaArrowLeft,
   FaCalendarAlt,
@@ -53,7 +54,9 @@ function Booking() {
     setMessageType("");
 
     if (!date || !time) {
-      setMessage("Please select your preferred booking date and time.");
+      setMessage(
+        "Please select your preferred booking date and time."
+      );
       setMessageType("error");
       return;
     }
@@ -78,10 +81,6 @@ function Booking() {
 
       setMessage("Booking request submitted successfully!");
       setMessageType("success");
-
-      setTimeout(() => {
-        navigate("/profile");
-      }, 1200);
     } catch (error) {
       console.error("Booking error:", error);
 
@@ -89,6 +88,7 @@ function Booking() {
         error.response?.data?.message ||
           "Booking failed. Please check your details and try again."
       );
+
       setMessageType("error");
     } finally {
       setSubmitting(false);
@@ -96,6 +96,7 @@ function Booking() {
   };
 
   const today = new Date();
+
   const minDate = [
     today.getFullYear(),
     String(today.getMonth() + 1).padStart(2, "0"),
@@ -107,6 +108,7 @@ function Booking() {
       <div className="flex min-h-[70vh] items-center justify-center bg-[#f8f6f2] px-5">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-orange-100 border-t-orange-500" />
+
           <p className="mt-5 text-sm font-medium text-neutral-500">
             Preparing your booking...
           </p>
@@ -115,11 +117,55 @@ function Booking() {
     );
   }
 
+  if (messageType === "error" && !worker._id && !worker.user) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center bg-[#f8f6f2] px-5">
+        <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <FaExclamationCircle className="mx-auto text-4xl text-orange-500" />
+
+          <h2 className="mt-5 text-xl font-bold text-neutral-900">
+            Unable to load professional
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-neutral-500">
+            {message}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+          >
+            <FaArrowLeft />
+            Go back
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const workerName =
+    worker.user?.name || worker.name || "Local Professional";
+
+  const workerImage =
+    worker.profileImage || worker.user?.profileImage;
+
   return (
     <main className="min-h-screen bg-[#f8f6f2] px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:pt-14">
       <div className="mx-auto max-w-6xl">
+
+        {/* Back navigation */}
+        <Link
+          to={`/worker/${worker._id || id}`}
+          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 transition hover:text-orange-600"
+        >
+          <FaArrowLeft />
+          Back to professional
+        </Link>
+
         {/* Main content */}
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5 lg:gap-8">
+
           {/* Worker information */}
           <aside className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] lg:col-span-2">
             <div className="h-1.5 bg-orange-500" />
@@ -130,12 +176,10 @@ function Booking() {
               </p>
 
               <div className="mt-6 flex items-center gap-4">
-                {worker.profileImage || worker.user?.profileImage ? (
+                {workerImage ? (
                   <img
-                    src={
-                      worker.profileImage || worker.user?.profileImage
-                    }
-                    alt={worker.user?.name || worker.name || "Worker"}
+                    src={workerImage}
+                    alt={workerName}
                     className="h-[76px] w-[76px] shrink-0 rounded-2xl object-cover ring-4 ring-[#f8f6f2]"
                   />
                 ) : (
@@ -145,21 +189,32 @@ function Booking() {
                 )}
 
                 <div className="min-w-0">
-                  <h2 className="break-words text-lg font-bold text-neutral-900 sm:text-xl">
-                    {worker.user?.name ||
-                      worker.name ||
-                      "Local Professional"}
-                  </h2>
+                  <Link
+                    to={`/worker/${worker._id || id}`}
+                    className="break-words text-lg font-bold text-neutral-900 transition hover:text-orange-600 sm:text-xl"
+                  >
+                    {workerName}
+                  </Link>
 
                   <span className="mt-2 inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
                     {worker.category || "Service Professional"}
                   </span>
+
+                  <Link
+                    to={`/worker/${worker._id || id}`}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 transition hover:text-orange-600"
+                  >
+                    View profile
+                    <FaArrowRight />
+                  </Link>
                 </div>
               </div>
 
               <div className="my-7 border-t border-neutral-100" />
 
               <div className="space-y-5">
+
+                {/* Location */}
                 <div className="flex items-start gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-neutral-600">
                     <FaMapMarkerAlt />
@@ -169,12 +224,14 @@ function Booking() {
                     <p className="text-xs font-medium text-neutral-500">
                       Service location
                     </p>
+
                     <p className="mt-1.5 break-words text-sm font-semibold text-neutral-800">
                       {worker.location || "Location not specified"}
                     </p>
                   </div>
                 </div>
 
+                {/* Price */}
                 <div className="flex items-start gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
                     <FaRupeeSign />
@@ -184,17 +241,20 @@ function Booking() {
                     <p className="text-xs font-medium text-neutral-500">
                       Listed service price
                     </p>
+
                     <p className="mt-1 text-xl font-bold text-neutral-950">
                       {worker.pricing != null
                         ? `₹${worker.pricing}`
                         : "Contact for price"}
                     </p>
+
                     <p className="mt-1 text-xs leading-5 text-neutral-500">
                       Final pricing can be confirmed with the professional.
                     </p>
                   </div>
                 </div>
 
+                {/* Experience */}
                 {worker.experience != null && (
                   <div className="flex items-start gap-3.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-neutral-600">
@@ -205,6 +265,7 @@ function Booking() {
                       <p className="text-xs font-medium text-neutral-500">
                         Experience
                       </p>
+
                       <p className="mt-1.5 text-sm font-semibold text-neutral-800">
                         {worker.experience} years
                       </p>
@@ -213,13 +274,16 @@ function Booking() {
                 )}
               </div>
 
+              {/* Information panel */}
               <div className="mt-8 rounded-xl border border-orange-100 bg-[#fffaf5] p-4">
                 <div className="flex items-start gap-3">
                   <FaShieldAlt className="mt-0.5 shrink-0 text-orange-500" />
+
                   <div>
                     <p className="text-sm font-bold text-neutral-900">
                       Clear details, better service
                     </p>
+
                     <p className="mt-1.5 text-xs leading-5 text-neutral-600">
                       Share your requirements clearly to help the professional
                       prepare for the job.
@@ -232,6 +296,7 @@ function Booking() {
 
           {/* Booking form */}
           <section className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] lg:col-span-3">
+
             <div className="border-b border-neutral-100 px-6 py-6 sm:px-8 sm:py-7">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-600">
                 Booking information
@@ -248,9 +313,11 @@ function Booking() {
             </div>
 
             <form onSubmit={bookWorker} className="space-y-6 p-6 sm:p-8">
+
+              {/* Success and error messages */}
               {message && (
                 <div
-                  role="status"
+                  role={messageType === "error" ? "alert" : "status"}
                   aria-live="polite"
                   className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${
                     messageType === "success"
@@ -263,11 +330,36 @@ function Booking() {
                   ) : (
                     <FaExclamationCircle className="mt-1 shrink-0" />
                   )}
+
                   <p>{message}</p>
                 </div>
               )}
 
+              {/* Actions after successful booking */}
+              {messageType === "success" && (
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Link
+                    to={`/worker/${worker._id || id}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:border-orange-300 hover:text-orange-600"
+                  >
+                    View worker profile
+                    <FaArrowRight />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/profile")}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                  >
+                    My bookings
+                    <FaArrowRight />
+                  </button>
+                </div>
+              )}
+
+              {/* Date and time */}
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
                 <div>
                   <label
                     htmlFor="booking-date"
@@ -278,6 +370,7 @@ function Booking() {
 
                   <div className="relative">
                     <FaCalendarAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400" />
+
                     <input
                       id="booking-date"
                       type="date"
@@ -286,6 +379,7 @@ function Booking() {
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                       required
+                      disabled={messageType === "success"}
                     />
                   </div>
                 </div>
@@ -300,6 +394,7 @@ function Booking() {
 
                   <div className="relative">
                     <FaClock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400" />
+
                     <input
                       id="booking-time"
                       type="time"
@@ -307,11 +402,13 @@ function Booking() {
                       value={time}
                       onChange={(e) => setTime(e.target.value)}
                       required
+                      disabled={messageType === "success"}
                     />
                   </div>
                 </div>
               </div>
 
+              {/* Problem description */}
               <div>
                 <div className="mb-2.5 flex items-center justify-between gap-3">
                   <label
@@ -334,6 +431,7 @@ function Booking() {
                   placeholder="What needs to be fixed, installed, cleaned, or completed?"
                   value={problem}
                   onChange={(e) => setProblem(e.target.value)}
+                  disabled={messageType === "success"}
                 />
 
                 <p className="mt-2 text-xs leading-5 text-neutral-500">
@@ -341,25 +439,28 @@ function Booking() {
                 </p>
               </div>
 
-              <div className="border-t border-neutral-100 pt-6">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="group flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/15 transition duration-200 hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/20 focus:outline-none focus:ring-4 focus:ring-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-                >
-                  {submitting
-                    ? "Submitting your request..."
-                    : "Confirm booking"}
+              {/* Submit button */}
+              {messageType !== "success" && (
+                <div className="border-t border-neutral-100 pt-6">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="group flex w-full items-center justify-center gap-3 rounded-xl bg-orange-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-orange-500/15 transition duration-200 hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/20 focus:outline-none focus:ring-4 focus:ring-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                  >
+                    {submitting
+                      ? "Submitting your request..."
+                      : "Confirm booking"}
 
-                  {!submitting && (
-                    <FaArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
-                  )}
-                </button>
+                    {!submitting && (
+                      <FaArrowRight className="transition-transform duration-200 group-hover:translate-x-1" />
+                    )}
+                  </button>
 
-                <p className="mt-4 text-center text-xs leading-5 text-neutral-500">
-                  Please review your booking details before submitting.
-                </p>
-              </div>
+                  <p className="mt-4 text-center text-xs leading-5 text-neutral-500">
+                    Please review your booking details before submitting.
+                  </p>
+                </div>
+              )}
             </form>
           </section>
         </div>

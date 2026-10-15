@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -49,7 +48,6 @@ const UserProfile = () => {
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
 
-  // Fetch customer bookings
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -78,7 +76,6 @@ const UserProfile = () => {
     fetchBookings();
   }, []);
 
-  // Fetch customer profile from MongoDB
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -92,31 +89,24 @@ const UserProfile = () => {
           throw new Error("Profile details were not returned.");
         }
 
-        const profileData = {
+        setProfile({
           name: savedUser.name || "",
           phone: savedUser.phone || "",
           email: savedUser.email || "",
           address: savedUser.address || "",
-        };
+        });
 
-        setProfile(profileData);
-
-        // Keep the local user details synchronized
         const localUser = JSON.parse(
           localStorage.getItem("user") || "{}"
         );
 
         localStorage.setItem(
           "user",
-          JSON.stringify({
-            ...localUser,
-            ...savedUser,
-          })
+          JSON.stringify({ ...localUser, ...savedUser })
         );
       } catch (err) {
         console.error("Error fetching profile:", err);
 
-        // Show existing local details if the API fails
         const localUser = JSON.parse(
           localStorage.getItem("user") || "{}"
         );
@@ -140,7 +130,6 @@ const UserProfile = () => {
     fetchProfile();
   }, []);
 
-  // Scroll to dashboard sections from sidebar links
   useEffect(() => {
     if (!location.hash) return;
 
@@ -168,7 +157,6 @@ const UserProfile = () => {
     (booking) => booking.status?.toLowerCase() === "completed"
   ).length;
 
-  // Filter and search bookings
   const filteredBookings = bookings.filter((booking) => {
     const matchesFilter =
       activeFilter === "All" ||
@@ -238,16 +226,12 @@ const UserProfile = () => {
 
       localStorage.setItem(
         "user",
-        JSON.stringify({
-          ...localUser,
-          ...savedUser,
-        })
+        JSON.stringify({ ...localUser, ...savedUser })
       );
 
       setEditingProfile(false);
       setProfileMessage("Your profile has been saved successfully.");
 
-      // Refresh bookings to use the latest profile details
       await fetchBookings();
     } catch (err) {
       console.error("Error saving profile:", err);
@@ -283,16 +267,12 @@ const UserProfile = () => {
     switch (status?.toLowerCase()) {
       case "completed":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
-
       case "accepted":
         return "bg-blue-50 text-blue-700 border-blue-200";
-
       case "rejected":
         return "bg-red-50 text-red-700 border-red-200";
-
       case "cancelled":
         return "bg-gray-100 text-gray-600 border-gray-200";
-
       default:
         return "bg-amber-50 text-amber-700 border-amber-200";
     }
@@ -303,11 +283,9 @@ const UserProfile = () => {
       case "completed":
       case "accepted":
         return <FaCheckCircle />;
-
       case "rejected":
       case "cancelled":
         return <FaExclamationCircle />;
-
       default:
         return <FaHourglassHalf />;
     }
@@ -338,7 +316,10 @@ const UserProfile = () => {
       (isBookingsLink && location.hash === "#my-bookings") ||
       (isProfileLink && location.hash === "#my-profile") ||
       (isSavedWorkersLink &&
-        location.pathname === "/saved-workers");
+        location.pathname === "/saved-workers") ||
+      (to === "/profile" &&
+        location.pathname === "/profile" &&
+        !location.hash);
 
     return (
       <Link
@@ -387,7 +368,6 @@ const UserProfile = () => {
               <h1 className="text-xl font-extrabold tracking-tight text-white">
                 Work<span className="text-orange-500">Near</span>
               </h1>
-
               <p className="mt-0.5 text-xs text-gray-400">
                 Customer dashboard
               </p>
@@ -461,43 +441,32 @@ const UserProfile = () => {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main content: no top navbar or footer */}
       <main className="min-h-screen lg:ml-72">
-        <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-[#f7f7f5]/95 px-5 py-4 backdrop-blur-xl sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(true)}
-                className="rounded-xl border border-gray-200 bg-white p-3 text-gray-700 lg:hidden"
-                aria-label="Open sidebar"
-              >
-                <FaBars size={17} />
-              </button>
+        <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8 lg:px-10">
 
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-gray-500">
-                  Customer portal
-                </p>
-
-                <h2 className="mt-1 text-lg font-bold sm:text-xl">
-                  My Dashboard
-                </h2>
-              </div>
-            </div>
+          {/* Mobile sidebar toggle */}
+          <div className="mb-5 flex items-center justify-between lg:hidden">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm"
+            >
+              <FaBars />
+              Menu
+            </button>
 
             <Link
               to="/"
-              className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold transition hover:border-orange-300 hover:text-orange-600 sm:flex"
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white"
             >
               Find a worker
               <FaArrowRight size={12} />
             </Link>
           </div>
-        </header>
 
-        <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
-          {/* Welcome section */}
+          {/* Welcome */}
           <section className="relative overflow-hidden rounded-3xl bg-[#171717] p-6 text-white sm:p-9">
             <div className="relative z-10 max-w-2xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-orange-300">
@@ -514,8 +483,8 @@ const UserProfile = () => {
               </h1>
 
               <p className="mt-4 max-w-lg text-sm leading-6 text-gray-300 sm:text-base">
-                Manage your bookings, keep track of service requests, and find
-                trusted professionals near you.
+                Manage your bookings, track service requests, and find trusted
+                professionals near you.
               </p>
 
               <Link
@@ -531,32 +500,20 @@ const UserProfile = () => {
             <div className="pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full bg-orange-500/10 blur-2xl" />
           </section>
 
-          {/* Dashboard statistics */}
+          {/* Statistics */}
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
-                  <FaCalendarAlt size={20} />
-                </div>
-                <span className="text-xs font-medium text-gray-400">
-                  All time
-                </span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                <FaCalendarAlt size={20} />
               </div>
-
               <p className="mt-5 text-sm text-gray-500">Total bookings</p>
               <p className="mt-1 text-3xl font-bold">{totalBookings}</p>
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                  <FaClock size={20} />
-                </div>
-                <span className="text-xs font-medium text-gray-400">
-                  In progress
-                </span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <FaClock size={20} />
               </div>
-
               <p className="mt-5 text-sm text-gray-500">
                 Pending / accepted
               </p>
@@ -564,15 +521,9 @@ const UserProfile = () => {
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:col-span-2 xl:col-span-1">
-              <div className="flex items-center justify-between">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                  <FaCheckCircle size={20} />
-                </div>
-                <span className="text-xs font-medium text-gray-400">
-                  Finished
-                </span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <FaCheckCircle size={20} />
               </div>
-
               <p className="mt-5 text-sm text-gray-500">
                 Completed bookings
               </p>
@@ -583,19 +534,17 @@ const UserProfile = () => {
           </section>
 
           {/* My Bookings */}
-          <section id="my-bookings" className="mt-10 scroll-mt-28">
+          <section id="my-bookings" className="mt-10 scroll-mt-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-600">
                   Service activity
                 </p>
-
                 <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
                   My Bookings
                 </h2>
-
                 <p className="mt-2 text-sm text-gray-500">
-                  View and manage the service requests you have made.
+                  Track your bookings and review completed services.
                 </p>
               </div>
 
@@ -604,10 +553,10 @@ const UserProfile = () => {
               </span>
             </div>
 
+            {/* Search and filters */}
             <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:max-w-sm">
                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
                 <input
                   type="text"
                   value={searchTerm}
@@ -618,22 +567,27 @@ const UserProfile = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {["All", "Pending", "Accepted", "Completed", "Rejected"].map(
-                  (filter) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      onClick={() => setActiveFilter(filter)}
-                      className={`rounded-lg px-3 py-2 text-xs font-semibold transition sm:text-sm ${
-                        activeFilter === filter
-                          ? "bg-orange-500 text-white"
-                          : "border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-600"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  )
-                )}
+                {[
+                  "All",
+                  "Pending",
+                  "Accepted",
+                  "Completed",
+                  "Rejected",
+                  "Cancelled",
+                ].map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setActiveFilter(filter)}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition sm:text-sm ${
+                      activeFilter === filter
+                        ? "bg-orange-500 text-white"
+                        : "border border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-600"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -655,7 +609,6 @@ const UserProfile = () => {
                       Unable to load bookings
                     </h3>
                     <p className="mt-1 text-sm text-red-700">{error}</p>
-
                     <button
                       type="button"
                       onClick={fetchBookings}
@@ -682,8 +635,8 @@ const UserProfile = () => {
 
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-gray-500">
                   {bookings.length === 0
-                    ? "When you book a service professional, your booking details will appear here."
-                    : "Try changing the status filter or search for another booking."}
+                    ? "When you book a professional, your booking details will appear here."
+                    : "Try another status filter or search term."}
                 </p>
 
                 {bookings.length === 0 && (
@@ -701,24 +654,29 @@ const UserProfile = () => {
             {!loading && !error && filteredBookings.length > 0 && (
               <div className="mt-6 space-y-4">
                 {filteredBookings.map((booking) => {
+                  const worker = booking.worker;
+
                   const workerName =
-                    booking.worker?.user?.name ||
-                    booking.worker?.name ||
+                    worker?.user?.name ||
+                    worker?.name ||
                     "Service professional";
 
+                  const workerImage =
+                    worker?.profileImage ||
+                    worker?.user?.profileImage ||
+                    "";
+
                   const category =
-                    booking.worker?.category ||
-                    booking.worker?.skill ||
+                    worker?.category ||
+                    worker?.skill ||
                     "General service";
 
                   const status = booking.status || "Pending";
-
-                  const workerId =
-                    booking.worker?._id || booking.worker?.id;
+                  const workerId = worker?._id || worker?.id;
 
                   const workerPhone =
                     status.toLowerCase() === "accepted"
-                      ? booking.worker?.user?.phone
+                      ? worker?.user?.phone
                       : "";
 
                   return (
@@ -728,35 +686,75 @@ const UserProfile = () => {
                     >
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex min-w-0 gap-4">
-                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-                            <FaTools size={23} />
-                          </div>
+                          {/* Clickable worker image */}
+                          {workerId ? (
+                            <Link
+                              to={`/worker/${workerId}`}
+                              aria-label={`View ${workerName}'s profile`}
+                              className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-orange-50 ring-offset-2 transition hover:ring-2 hover:ring-orange-400"
+                            >
+                              {workerImage ? (
+                                <img
+                                  src={workerImage}
+                                  alt={workerName}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center text-xl text-orange-600">
+                                  <FaTools />
+                                </span>
+                              )}
+                            </Link>
+                          ) : (
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
+                              <FaTools size={23} />
+                            </div>
+                          )}
 
                           <div className="min-w-0">
-                            <h3 className="break-words text-lg font-bold">
-                              {workerName}
-                            </h3>
+                            {/* Clickable worker name */}
+                            {workerId ? (
+                              <Link
+                                to={`/worker/${workerId}`}
+                                className="break-words text-lg font-bold transition hover:text-orange-600"
+                              >
+                                {workerName}
+                              </Link>
+                            ) : (
+                              <h3 className="break-words text-lg font-bold">
+                                {workerName}
+                              </h3>
+                            )}
 
                             <p className="mt-1 text-sm font-medium text-orange-600">
                               {category}
                             </p>
 
-                            <p className="mt-2 text-xs text-gray-400">
+                            {workerId && (
+                              <Link
+                                to={`/worker/${workerId}`}
+                                className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-orange-600"
+                              >
+                                View worker profile
+                                <FaArrowRight size={10} />
+                              </Link>
+                            )}
+
+                            <p className="mt-2 break-all text-xs text-gray-400">
                               Booking ID: {booking._id}
                             </p>
                           </div>
                         </div>
 
                         <span
-                          className={`inline-flex w-fit shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusStyle(
-                            status
-                          )}`}
+                          className={`inline-flex w-fit shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${getStatusStyle(status)}`}
                         >
                           {getStatusIcon(status)}
                           {status}
                         </span>
                       </div>
 
+                      {/* Booking details */}
                       <div className="mt-5 grid grid-cols-1 gap-4 rounded-xl bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="flex items-start gap-3">
                           <FaCalendarAlt className="mt-1 shrink-0 text-orange-500" />
@@ -795,7 +793,7 @@ const UserProfile = () => {
                         </div>
                       </div>
 
-                      {/* Worker phone becomes visible after acceptance */}
+                      {/* Accepted booking contact details */}
                       {status.toLowerCase() === "accepted" && (
                         <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
                           <div className="flex items-start gap-3">
@@ -809,7 +807,7 @@ const UserProfile = () => {
                               </p>
 
                               <p className="mt-1 text-xs text-blue-800">
-                                You can now contact your service professional.
+                                You can contact your service professional.
                               </p>
 
                               {workerPhone ? (
@@ -822,7 +820,7 @@ const UserProfile = () => {
                                 </a>
                               ) : (
                                 <p className="mt-3 text-sm text-blue-800">
-                                  The worker has not added a phone number.
+                                  A phone number is not available.
                                 </p>
                               )}
                             </div>
@@ -830,21 +828,24 @@ const UserProfile = () => {
                         </div>
                       )}
 
+                      {/* Booking actions */}
                       <div className="mt-5 flex flex-wrap gap-3">
-                        {status.toLowerCase() === "completed" && workerId && (
-                          <Link
-                            to={`/review/${workerId}/${booking._id}`}
-                            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600"
-                          >
-                            <FaStar size={13} />
-                            Leave a review
-                          </Link>
-                        )}
+                        {/* Review button only after completion */}
+                        {status.toLowerCase() === "completed" &&
+                          workerId && (
+                            <Link
+                              to={`/add-review/${workerId}/${booking._id}`}
+                              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600"
+                            >
+                              <FaStar size={14} />
+                              Write a Review
+                            </Link>
+                          )}
 
                         {workerId && (
                           <Link
                             to={`/register-complaint/${workerId}/${booking._id}`}
-                            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
+                            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
                           >
                             <FaExclamationCircle size={13} />
                             Raise a complaint
@@ -859,7 +860,7 @@ const UserProfile = () => {
           </section>
 
           {/* My Profile */}
-          <section id="my-profile" className="mt-10 scroll-mt-28">
+          <section id="my-profile" className="mt-10 scroll-mt-6">
             <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -939,7 +940,6 @@ const UserProfile = () => {
                       >
                         Full name
                       </label>
-
                       <input
                         id="profile-name"
                         name="name"
@@ -961,7 +961,6 @@ const UserProfile = () => {
                       >
                         Phone number
                       </label>
-
                       <input
                         id="profile-phone"
                         name="phone"
@@ -982,7 +981,6 @@ const UserProfile = () => {
                       >
                         Email address
                       </label>
-
                       <input
                         id="profile-email"
                         name="email"
@@ -993,7 +991,6 @@ const UserProfile = () => {
                         placeholder="Enter your email address"
                         className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-orange-400"
                       />
-
                       <p className="mt-2 text-xs text-gray-500">
                         Changing your email here does not verify ownership
                         of the new email address.
@@ -1007,7 +1004,6 @@ const UserProfile = () => {
                       >
                         Service address
                       </label>
-
                       <textarea
                         id="profile-address"
                         name="address"
@@ -1052,7 +1048,6 @@ const UserProfile = () => {
                         Full name
                       </p>
                     </div>
-
                     <p className="mt-2 break-words text-sm font-semibold">
                       {profile.name || "Not added yet"}
                     </p>
@@ -1065,7 +1060,6 @@ const UserProfile = () => {
                         Phone number
                       </p>
                     </div>
-
                     <p className="mt-2 break-words text-sm font-semibold">
                       {profile.phone || "Not added yet"}
                     </p>
@@ -1078,7 +1072,6 @@ const UserProfile = () => {
                         Email address
                       </p>
                     </div>
-
                     <p className="mt-2 break-words text-sm font-semibold">
                       {profile.email || "Not added yet"}
                     </p>
@@ -1091,7 +1084,6 @@ const UserProfile = () => {
                         Service address
                       </p>
                     </div>
-
                     <p className="mt-2 break-words text-sm font-semibold">
                       {profile.address || "Not added yet"}
                     </p>
@@ -1100,10 +1092,6 @@ const UserProfile = () => {
               )}
             </div>
           </section>
-
-          <footer className="mt-10 border-t border-gray-200 py-6 text-center text-xs text-gray-500">
-            © {new Date().getFullYear()} WorkNear. Customer Dashboard.
-          </footer>
         </div>
       </main>
     </div>

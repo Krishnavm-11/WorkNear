@@ -1,12 +1,10 @@
-
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   FaTools,
   FaThLarge,
   FaUser,
   FaCalendarAlt,
-  FaEnvelope,
+  FaHeadset,
   FaSignOutAlt,
   FaBars,
   FaTimes,
@@ -19,10 +17,14 @@ import {
   FaCheckCircle,
   FaHourglassHalf,
   FaTimesCircle,
-  FaArrowRight,
   FaCamera,
   FaSyncAlt,
   FaPhone,
+  FaEnvelope,
+  FaUserCog,
+  FaShieldAlt,
+  FaWrench,
+  FaInfoCircle,
 } from "react-icons/fa";
 import api from "../services/api";
 
@@ -38,7 +40,7 @@ const navItems = [
   { id: "overview", label: "Overview", icon: FaThLarge },
   { id: "profile", label: "My Profile", icon: FaUser },
   { id: "bookings", label: "My Bookings", icon: FaCalendarAlt },
-  { id: "contact", label: "Contact", icon: FaEnvelope },
+  { id: "contact", label: "Support", icon: FaHeadset },
 ];
 
 function WorkerDashboard() {
@@ -472,7 +474,7 @@ function WorkerDashboard() {
                   "View customer information and manage your booking requests."}
 
                 {activeTab === "contact" &&
-                  "Get assistance with your worker account and services."}
+                  "Information to help you with your worker account and services."}
               </p>
             </div>
 
@@ -553,7 +555,7 @@ function WorkerDashboard() {
                       onClick={openProfileForm}
                       className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-orange-600"
                     >
-                      <FaPlus /> Create worker profile <FaArrowRight />
+                      <FaPlus /> Create worker profile
                     </button>
                   </div>
                 </section>
@@ -735,9 +737,9 @@ function WorkerDashboard() {
                   <button
                     type="button"
                     onClick={() => changeTab("bookings")}
-                    className="inline-flex items-center gap-2 text-sm font-bold text-orange-600 hover:text-orange-700"
+                    className="text-sm font-bold text-orange-600 hover:text-orange-700"
                   >
-                    View all <FaArrowRight />
+                    View all
                   </button>
                 </div>
 
@@ -1006,8 +1008,6 @@ function WorkerDashboard() {
                         : worker
                         ? "Save changes"
                         : "Submit for approval"}
-
-                      {!saving && <FaArrowRight />}
                     </button>
 
                     {worker && (
@@ -1365,38 +1365,176 @@ function WorkerDashboard() {
             </section>
           )}
 
-          {/* CONTACT */}
+          {/* SUPPORT */}
           {activeTab === "contact" && (
-            <section className="grid grid-cols-1 gap-6">
-              <div className="relative min-h-[300px] overflow-hidden rounded-3xl bg-[#191919] p-7 text-white sm:p-10 lg:p-12">
+            <section className="space-y-8">
+              {/* Support introduction */}
+              <div className="relative overflow-hidden rounded-3xl bg-[#191919] p-7 text-white sm:p-10 lg:p-12">
                 <div className="absolute -right-12 -top-12 h-60 w-60 rounded-full bg-orange-500/15 blur-3xl" />
 
                 <div className="relative max-w-2xl">
                   <span className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs text-neutral-300">
-                    <FaEnvelope className="text-orange-400" />
-                    Worker support
+                    <FaHeadset className="text-orange-400" />
+                    WORKNEAR WORKER SUPPORT
                   </span>
 
                   <h2 className="mt-6 text-3xl font-extrabold leading-tight sm:text-4xl">
-                    Need a hand?
+                    How can we help?
                     <br />
                     <span className="text-orange-400">
-                      We're here to help.
+                      We're here for you.
                     </span>
                   </h2>
 
-                  <p className="mt-4 max-w-md text-sm leading-7 text-neutral-400">
-                    Need help with your worker profile, account, approval
-                    status, or bookings? Contact our support team for
-                    assistance.
+                  <p className="mt-4 max-w-lg text-sm leading-7 text-neutral-400">
+                    Find information about your worker account, profile,
+                    booking requests, and technical issues.
                   </p>
+                </div>
+              </div>
 
-                  <Link
-                    to="/worker-contact"
-                    className="mt-7 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-orange-600"
-                  >
-                    Contact worker support <FaArrowRight />
-                  </Link>
+              {/* Support topics */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-orange-600">
+                  SUPPORT CENTER
+                </p>
+
+                <h2 className="mt-2 text-2xl font-extrabold">
+                  What do you need help with?
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                  Information about common worker account questions.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                {/* Account and profile */}
+                <article className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-7">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl text-orange-600">
+                      <FaUserCog />
+                    </span>
+
+                    <div>
+                      <h3 className="text-base font-extrabold">
+                        Account & Profile
+                      </h3>
+
+                      <p className="mt-3 text-sm leading-6 text-neutral-500">
+                        Update your service category, skills, experience,
+                        pricing, location, and profile image from the My
+                        Profile section.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                {/* Booking issues */}
+                <article className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-7">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl text-orange-600">
+                      <FaCalendarAlt />
+                    </span>
+
+                    <div>
+                      <h3 className="text-base font-extrabold">
+                        Booking Issues
+                      </h3>
+
+                      <p className="mt-3 text-sm leading-6 text-neutral-500">
+                        View customer details and booking requests in My
+                        Bookings. Update a booking to Accepted, Rejected,
+                        or Completed when appropriate.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                {/* Profile approval */}
+                <article className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-7">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl text-orange-600">
+                      <FaShieldAlt />
+                    </span>
+
+                    <div>
+                      <h3 className="text-base font-extrabold">
+                        Profile Approval
+                      </h3>
+
+                      <p className="mt-3 text-sm leading-6 text-neutral-500">
+                        Newly submitted worker profiles require admin
+                        approval before they can appear to customers.
+                        Check your profile status on the dashboard.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+
+                {/* Technical problems */}
+                <article className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-7">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl text-orange-600">
+                      <FaWrench />
+                    </span>
+
+                    <div>
+                      <h3 className="text-base font-extrabold">
+                        Technical Problems
+                      </h3>
+
+                      <p className="mt-3 text-sm leading-6 text-neutral-500">
+                        If a page fails to load, refresh your dashboard
+                        and check your internet connection. If the issue
+                        continues, note the error message and the action
+                        that caused it.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              {/* Support email information — plain text only */}
+              <div className="rounded-2xl border border-neutral-200/80 bg-white p-6 sm:p-8">
+                <div className="flex items-start gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl text-orange-600">
+                    <FaEnvelope />
+                  </span>
+
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-extrabold">
+                      WorkNear Support
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-neutral-500">
+                      For help with your account or worker services, our
+                      support contact is listed below.
+                    </p>
+
+                    <p className="mt-4 break-all text-sm font-semibold text-neutral-800">
+                      worknear.platform@gmail.com
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Helpful reminder */}
+              <div className="rounded-2xl border border-orange-100 bg-orange-50/70 p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <FaInfoCircle className="mt-1 shrink-0 text-orange-600" />
+
+                  <div>
+                    <h3 className="font-bold text-neutral-900">
+                      Helpful information
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-neutral-600">
+                      When reporting a problem, keep the relevant booking
+                      ID, account details, and a short description of the
+                      issue available.
+                    </p>
+                  </div>
                 </div>
               </div>
             </section>
