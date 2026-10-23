@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -48,6 +49,35 @@ const UserProfile = () => {
   const [profileError, setProfileError] = useState("");
   const [profileMessage, setProfileMessage] = useState("");
 
+  // Hide the application-level Navbar and Footer while the dashboard is open.
+  // Restore their previous display values when leaving the dashboard.
+  useEffect(() => {
+    const elements = Array.from(
+      document.querySelectorAll("body nav, body header, body footer")
+    );
+
+    const hiddenElements = elements.filter((element) => {
+      // Do not hide the dashboard's own sidebar or its controls.
+      return !element.closest("aside") &&
+        !element.closest("main");
+    });
+
+    const previousStyles = hiddenElements.map((element) => ({
+      element,
+      display: element.style.display,
+    }));
+
+    hiddenElements.forEach((element) => {
+      element.style.display = "none";
+    });
+
+    return () => {
+      previousStyles.forEach(({ element, display }) => {
+        element.style.display = display;
+      });
+    };
+  }, []);
+
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -62,7 +92,6 @@ const UserProfile = () => {
       setBookings(bookingData);
     } catch (err) {
       console.error("Error fetching bookings:", err);
-
       setError(
         err.response?.data?.message ||
           "Unable to load your bookings. Please try again."
@@ -148,9 +177,7 @@ const UserProfile = () => {
   const totalBookings = bookings.length;
 
   const pendingBookings = bookings.filter((booking) =>
-    ["pending", "accepted"].includes(
-      booking.status?.toLowerCase()
-    )
+    ["pending", "accepted"].includes(booking.status?.toLowerCase())
   ).length;
 
   const completedBookings = bookings.filter(
@@ -315,8 +342,7 @@ const UserProfile = () => {
     const isActive =
       (isBookingsLink && location.hash === "#my-bookings") ||
       (isProfileLink && location.hash === "#my-profile") ||
-      (isSavedWorkersLink &&
-        location.pathname === "/saved-workers") ||
+      (isSavedWorkersLink && location.pathname === "/saved-workers") ||
       (to === "/profile" &&
         location.pathname === "/profile" &&
         !location.hash);
@@ -348,7 +374,6 @@ const UserProfile = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[#171717] px-5 py-6 transition-transform duration-300 lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -393,6 +418,14 @@ const UserProfile = () => {
             Dashboard
           </SidebarLink>
 
+          <SidebarLink to="/" icon={<FaHome size={17} />}>
+            Go to Home
+          </SidebarLink>
+
+          <SidebarLink to="/workers" icon={<FaSearch size={17} />}>
+            Find a Worker
+          </SidebarLink>
+
           <SidebarLink
             to="/profile#my-bookings"
             icon={<FaCalendarAlt size={17} />}
@@ -400,10 +433,7 @@ const UserProfile = () => {
             My Bookings
           </SidebarLink>
 
-          <SidebarLink
-            to="/saved-workers"
-            icon={<FaHeart size={17} />}
-          >
+          <SidebarLink to="/saved-workers" icon={<FaHeart size={17} />}>
             Saved Workers
           </SidebarLink>
 
@@ -441,11 +471,8 @@ const UserProfile = () => {
         </div>
       </aside>
 
-      {/* Main content: no top navbar or footer */}
       <main className="min-h-screen lg:ml-72">
         <div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 sm:py-8 lg:px-10">
-
-          {/* Mobile sidebar toggle */}
           <div className="mb-5 flex items-center justify-between lg:hidden">
             <button
               type="button"
@@ -461,12 +488,11 @@ const UserProfile = () => {
               to="/"
               className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white"
             >
-              Find a worker
-              <FaArrowRight size={12} />
+              <FaHome />
+              Home
             </Link>
           </div>
 
-          {/* Welcome */}
           <section className="relative overflow-hidden rounded-3xl bg-[#171717] p-6 text-white sm:p-9">
             <div className="relative z-10 max-w-2xl">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-orange-300">
@@ -487,20 +513,30 @@ const UserProfile = () => {
                 professionals near you.
               </p>
 
-              <Link
-                to="/"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-              >
-                Explore services
-                <FaArrowRight size={13} />
-              </Link>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+                >
+                  <FaHome size={15} />
+                  Go to Home
+                </Link>
+
+                <Link
+                  to="/workers"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+                >
+                  <FaSearch size={15} />
+                  Find a Worker
+                  <FaArrowRight size={12} />
+                </Link>
+              </div>
             </div>
 
             <div className="pointer-events-none absolute -right-10 -top-16 h-64 w-64 rounded-full border-[35px] border-orange-500/10 sm:right-10 sm:top-0" />
             <div className="pointer-events-none absolute -bottom-24 right-24 h-56 w-56 rounded-full bg-orange-500/10 blur-2xl" />
           </section>
 
-          {/* Statistics */}
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
@@ -514,9 +550,7 @@ const UserProfile = () => {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                 <FaClock size={20} />
               </div>
-              <p className="mt-5 text-sm text-gray-500">
-                Pending / accepted
-              </p>
+              <p className="mt-5 text-sm text-gray-500">Pending / accepted</p>
               <p className="mt-1 text-3xl font-bold">{pendingBookings}</p>
             </div>
 
@@ -524,16 +558,11 @@ const UserProfile = () => {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <FaCheckCircle size={20} />
               </div>
-              <p className="mt-5 text-sm text-gray-500">
-                Completed bookings
-              </p>
-              <p className="mt-1 text-3xl font-bold">
-                {completedBookings}
-              </p>
+              <p className="mt-5 text-sm text-gray-500">Completed bookings</p>
+              <p className="mt-1 text-3xl font-bold">{completedBookings}</p>
             </div>
           </section>
 
-          {/* My Bookings */}
           <section id="my-bookings" className="mt-10 scroll-mt-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
@@ -553,7 +582,6 @@ const UserProfile = () => {
               </span>
             </div>
 
-            {/* Search and filters */}
             <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative w-full sm:max-w-sm">
                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -641,7 +669,7 @@ const UserProfile = () => {
 
                 {bookings.length === 0 && (
                   <Link
-                    to="/"
+                    to="/workers"
                     className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
                   >
                     Find a professional
@@ -686,7 +714,6 @@ const UserProfile = () => {
                     >
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex min-w-0 gap-4">
-                          {/* Clickable worker image */}
                           {workerId ? (
                             <Link
                               to={`/worker/${workerId}`}
@@ -712,7 +739,6 @@ const UserProfile = () => {
                           )}
 
                           <div className="min-w-0">
-                            {/* Clickable worker name */}
                             {workerId ? (
                               <Link
                                 to={`/worker/${workerId}`}
@@ -754,14 +780,11 @@ const UserProfile = () => {
                         </span>
                       </div>
 
-                      {/* Booking details */}
                       <div className="mt-5 grid grid-cols-1 gap-4 rounded-xl bg-gray-50 p-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="flex items-start gap-3">
                           <FaCalendarAlt className="mt-1 shrink-0 text-orange-500" />
                           <div>
-                            <p className="text-xs text-gray-500">
-                              Booking date
-                            </p>
+                            <p className="text-xs text-gray-500">Booking date</p>
                             <p className="mt-1 text-sm font-semibold">
                               {formatDate(booking.date)}
                             </p>
@@ -771,9 +794,7 @@ const UserProfile = () => {
                         <div className="flex items-start gap-3">
                           <FaClock className="mt-1 shrink-0 text-orange-500" />
                           <div>
-                            <p className="text-xs text-gray-500">
-                              Preferred time
-                            </p>
+                            <p className="text-xs text-gray-500">Preferred time</p>
                             <p className="mt-1 text-sm font-semibold">
                               {booking.time || "Not specified"}
                             </p>
@@ -783,9 +804,7 @@ const UserProfile = () => {
                         <div className="flex items-start gap-3">
                           <FaTools className="mt-1 shrink-0 text-orange-500" />
                           <div>
-                            <p className="text-xs text-gray-500">
-                              Service request
-                            </p>
+                            <p className="text-xs text-gray-500">Service request</p>
                             <p className="mt-1 break-words text-sm font-semibold">
                               {booking.problem || "No description provided"}
                             </p>
@@ -793,7 +812,6 @@ const UserProfile = () => {
                         </div>
                       </div>
 
-                      {/* Accepted booking contact details */}
                       {status.toLowerCase() === "accepted" && (
                         <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
                           <div className="flex items-start gap-3">
@@ -805,7 +823,6 @@ const UserProfile = () => {
                               <p className="text-sm font-bold text-blue-900">
                                 Your booking has been accepted!
                               </p>
-
                               <p className="mt-1 text-xs text-blue-800">
                                 You can contact your service professional.
                               </p>
@@ -828,19 +845,16 @@ const UserProfile = () => {
                         </div>
                       )}
 
-                      {/* Booking actions */}
                       <div className="mt-5 flex flex-wrap gap-3">
-                        {/* Review button only after completion */}
-                        {status.toLowerCase() === "completed" &&
-                          workerId && (
-                            <Link
-                              to={`/add-review/${workerId}/${booking._id}`}
-                              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600"
-                            >
-                              <FaStar size={14} />
-                              Write a Review
-                            </Link>
-                          )}
+                        {status.toLowerCase() === "completed" && workerId && (
+                          <Link
+                            to={`/add-review/${workerId}/${booking._id}`}
+                            className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-sm shadow-orange-500/20 transition hover:bg-orange-600"
+                          >
+                            <FaStar size={14} />
+                            Write a Review
+                          </Link>
+                        )}
 
                         {workerId && (
                           <Link
@@ -859,7 +873,6 @@ const UserProfile = () => {
             )}
           </section>
 
-          {/* My Profile */}
           <section id="my-profile" className="mt-10 scroll-mt-6">
             <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -928,10 +941,7 @@ const UserProfile = () => {
                   Loading your profile...
                 </p>
               ) : editingProfile ? (
-                <form
-                  onSubmit={handleProfileSave}
-                  className="mt-6 space-y-5"
-                >
+                <form onSubmit={handleProfileSave} className="mt-6 space-y-5">
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
                       <label
