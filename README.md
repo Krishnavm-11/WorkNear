@@ -1,234 +1,165 @@
-# WorkNear – Local Worker Finding Platform
+# WorkNear --- Local Worker Finding Platform
 
-WorkNear is a full-stack **MERN web application** that helps users find and book trusted local workers such as electricians, plumbers, carpenters, cleaners, tutors, painters, and other service providers.
+WorkNear is a full-stack MERN application that helps customers discover
+and book local service professionals. It brings customers, workers, and
+administrators together in one platform for service discovery, booking
+management, reviews, and complaints.
 
-The platform provides separate features for **users, workers, and administrators**, making it easier to discover services, manage bookings, review completed work, and manage the platform.
+**Live Demo:** https://work-near-iota.vercel.app/
+**Backend API:** https://worknear-1.onrender.com
 
-## 🚀 Live Demo
+------------------------------------------------------------------------
 
-**[View WorkNear Live Demo]** https://work-near-3jw4.vercel.app
+## Table of Contents
 
----
+-   [Overview](#overview)
+-   [Features](#features)
+-   [Booking Workflow](#booking-workflow)
+-   [Technology Stack](#technology-stack)
+-   [Application Architecture](#application-architecture)
+-   [Project Structure](#project-structure)
+-   [Getting Started](#getting-started)
+-   [Environment Variables](#environment-variables)
+-   [Deployment](#deployment)
+-   [Learning Outcomes](#learning-outcomes)
+-   [Future Improvements](#future-improvements)
+-   [Developer](#developer)
 
-## 📌 Project Overview
+------------------------------------------------------------------------
 
-WorkNear connects customers with skilled local workers through a simple and user-friendly platform.
+## Overview
 
-Users can search for workers by **name or category**, view worker profiles, make bookings, track booking status, submit reviews, and register complaints.
+Finding a suitable local professional can be difficult. WorkNear aims to
+make the process simpler by letting customers browse service categories,
+view worker profiles, request bookings, and follow booking progress.
 
-Workers can create their profiles, upload profile images, submit their profiles for approval, manage bookings, and update booking status.
+The platform supports three roles:
 
-Administrators can manage users, workers, bookings, and complaints from an admin dashboard.
+-   **User:** Discover workers, create bookings, review completed
+    services, and submit complaints.
+-   **Worker:** Create a service profile, submit it for approval, and
+    manage incoming bookings.
+-   **Admin:** Review worker profiles and oversee users, bookings, and
+    complaints.
 
----
+## Features
 
-## ✨ Features
+### Customer Features
 
-### 👤 User Features
+-   Register and log in
+-   Browse approved workers
+-   Search workers by name or service category
+-   View worker details, skills, experience, pricing, and location
+-   Book a worker
+-   View booking history and booking status
+-   Review completed bookings
+-   Submit complaints
+-   Use a responsive interface on desktop and mobile
 
-* User registration and login
-* JWT-based authentication
-* Browse approved workers
-* Search workers by name
-* Search workers by category
-* View worker details
-* View worker profile information
-* Book workers
-* View booking history
-* Track booking status
-* Review completed bookings
-* Register complaints
-* Responsive user interface
+### Worker Features
 
----
+-   Register and log in as a worker
+-   Create and edit a worker profile
+-   Select a service category
+-   Add skills, experience, pricing, and location
+-   Upload a profile image
+-   Submit a profile for administrator approval
+-   View incoming booking requests
+-   Accept or reject bookings
+-   Mark accepted bookings as completed
+-   Manage bookings through a worker dashboard
 
-### 🧰 Worker Features
+### Admin Features
 
-* Worker registration and login
-* Create worker profile
-* Select service category
-* Add skills and experience
-* Add pricing information
-* Add location
-* Upload profile image
-* Cloudinary image storage
-* Submit profile for admin approval
-* Edit worker profile
-* View booking requests
-* Accept bookings
-* Reject bookings
-* Mark accepted bookings as completed
-* Worker dashboard
+-   Access the admin dashboard
+-   View platform statistics
+-   View users and workers
+-   Approve worker profiles
+-   View bookings
+-   View and manage customer complaints
+-   Delete users and workers
+-   Monitor platform activity
 
----
+### Reviews and Complaints
 
-### 🛠️ Admin Features
+-   Customers can review completed bookings with a rating and comment.
+-   Reviews reference the relevant worker and booking.
+-   The application is designed to prevent duplicate reviews for the
+    same booking.
+-   Customers can submit complaints, which administrators can review and
+    manage.
 
-* Admin login
-* Admin dashboard
-* View platform statistics
-* View all users
-* View all workers
-* Approve worker profiles
-* View all bookings
-* Manage complaints
-* Delete users
-* Delete workers
-* Monitor platform activity
+### Image Uploads
 
----
+Worker profile images are handled using **Multer** and **Cloudinary**.
+Image files are uploaded to Cloudinary, and the resulting image URL can
+be stored with the worker profile in MongoDB.
 
-## 🔄 Booking Flow
+## Booking Workflow
 
-```text
-User
-  │
-  ▼
-Search Worker
-  │
-  ▼
-View Worker Profile
-  │
-  ▼
-Create Booking
-  │
-  ▼
-Worker Receives Request
-  │
-  ├── Accept
-  │     │
-  │     ▼
-  │   Complete Job
-  │     │
-  │     ▼
-  │   User Gives Review
-  │
-  └── Reject
+1.  A customer searches for a worker by name or service category.
+2.  The customer views the worker's profile.
+3.  The customer creates a booking request.
+4.  The worker receives the request and accepts or rejects it.
+5.  If accepted, the worker can mark the job as completed.
+6.  The customer can submit a review after completion.
+
+## Technology Stack
+
+  Area                Technologies
+  ------------------- -----------------------------------------------
+  Frontend            React, Vite, JavaScript, React Router
+  Styling             Tailwind CSS
+  HTTP requests       Axios
+  Icons               React Icons
+  Backend             Node.js, Express.js
+  API                 REST API
+  Database            MongoDB, MongoDB Atlas, Mongoose
+  Authentication      JSON Web Token (JWT), bcrypt.js
+  Image uploads       Multer, Cloudinary, multer-storage-cloudinary
+  Development tools   VS Code, Git, GitHub, Postman, Nodemon
+  Deployment          Vercel, Render, MongoDB Atlas, Cloudinary
+
+## Application Architecture
+
+``` text
+Customer / Worker / Admin
+          |
+          v
+ React + Vite Frontend
+          |
+       Axios
+          |
+          v
+   Express REST API
+          |
+     --------------
+     |            |
+     v            v
+ MongoDB       Cloudinary
+ Atlas         (profile images)
 ```
 
----
+The frontend communicates with the Express backend through API requests.
+MongoDB Atlas stores application data, while Cloudinary stores worker
+profile images.
 
-## 🔐 Authentication & Authorization
+## Project Structure
 
-WorkNear uses **JWT authentication** to secure user accounts and protected routes.
+The following is a high-level structure of the project. Exact files may
+vary as the application develops.
 
-The application supports different user roles:
-
-* User
-* Worker
-* Admin
-
-Protected routes ensure that users can only access the features available to their role.
-
-Passwords are securely stored using **bcrypt.js**.
-
----
-
-## ⭐ Review System
-
-Users can submit a review after a worker completes their booking.
-
-The review system includes:
-
-* Rating
-* Comment
-* Worker reference
-* Booking reference
-* Prevention of duplicate reviews for the same booking
-
----
-
-## 📢 Complaint System
-
-Users can register complaints related to their bookings.
-
-The complaint system allows administrators to view and manage submitted complaints.
-
----
-
-## 🖼️ Image Upload
-
-Worker profile images are uploaded using:
-
-* Multer
-* Cloudinary
-* multer-storage-cloudinary
-
-Images are stored securely in Cloudinary instead of the local server.
-
----
-
-## 🛠️ Technologies Used
-
-### Frontend
-
-* React.js
-* Vite
-* JavaScript
-* React Router
-* Tailwind CSS
-* Axios
-* React Icons
-
-### Backend
-
-* Node.js
-* Express.js
-* REST API
-
-### Database
-
-* MongoDB
-* MongoDB Atlas
-* Mongoose
-
-### Authentication
-
-* JWT
-* bcrypt.js
-
-### Image Upload
-
-* Cloudinary
-* Multer
-* multer-storage-cloudinary
-
-### Development Tools
-
-* VS Code
-* Git
-* GitHub
-* Postman
-* Vite
-* Nodemon
-
-### Deployment
-
-* Vercel
-* Render
-* MongoDB Atlas
-* Cloudinary
-
----
-
-## 📂 Project Structure
-
-```text
+``` text
 WorkNear/
-│
 ├── client/
-│   │
 │   ├── public/
-│   │
 │   ├── src/
-│   │   │
 │   │   ├── components/
 │   │   │   ├── Navbar.jsx
 │   │   │   ├── Footer.jsx
 │   │   │   ├── ProtectedRoute.jsx
 │   │   │   ├── WorkerRoute.jsx
 │   │   │   └── AdminRoute.jsx
-│   │   │
 │   │   ├── pages/
 │   │   │   ├── Home.jsx
 │   │   │   ├── Login.jsx
@@ -242,21 +173,15 @@ WorkNear/
 │   │   │   ├── EditWorkerProfile.jsx
 │   │   │   ├── AddReview.jsx
 │   │   │   └── RegisterComplaint.jsx
-│   │   │
 │   │   ├── services/
 │   │   │   └── api.js
-│   │   │
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   │
 │   └── package.json
-│
 ├── server/
-│   │
 │   ├── config/
 │   │   ├── db.js
 │   │   └── cloudinary.js
-│   │
 │   ├── controllers/
 │   │   ├── authController.js
 │   │   ├── workerController.js
@@ -264,18 +189,15 @@ WorkNear/
 │   │   ├── reviewController.js
 │   │   ├── complaintController.js
 │   │   └── adminController.js
-│   │
 │   ├── middleware/
 │   │   ├── authMiddleware.js
 │   │   └── upload.js
-│   │
 │   ├── models/
 │   │   ├── User.js
 │   │   ├── Worker.js
 │   │   ├── Booking.js
 │   │   ├── Review.js
 │   │   └── Complaint.js
-│   │
 │   ├── routes/
 │   │   ├── authRoutes.js
 │   │   ├── workerRoutes.js
@@ -283,86 +205,96 @@ WorkNear/
 │   │   ├── reviewRoutes.js
 │   │   ├── complaintRoutes.js
 │   │   └── adminRoutes.js
-│   │
 │   ├── server.js
 │   └── package.json
-│
 └── README.md
 ```
 
----
+## Getting Started
 
-## ⚙️ Installation & Setup
+### Prerequisites
 
-### 1. Clone the Repository
+Install the following before running the project locally:
 
-```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-```
+-   Node.js and npm
+-   A MongoDB Atlas database or local MongoDB instance
+-   A Cloudinary account for worker profile image uploads
+-   Git
 
-Move into the project folder:
+### 1. Clone the repository
 
-```bash
+``` bash
+git clone https://github.com/Krishnavm-11/WorkNear
 cd WorkNear
 ```
 
----
+### 2. Configure the backend
 
-## 💻 Frontend Setup
+Open a terminal in the project directory:
 
-Open the client folder:
-
-```bash
-cd client
-```
-
-Install dependencies:
-
-```bash
+``` bash
+cd server
 npm install
 ```
 
-Create a `.env` file:
+Create a `.env` file inside the `server` folder and add the environment
+variables listed below.
 
-```env
-VITE_API_URL=http://localhost:5000/api
+Start the backend using the script available in `server/package.json`.
+Common commands are:
+
+``` bash
+npm start
 ```
 
-Start the frontend:
+For development, if the project defines a `dev` script:
 
-```bash
+``` bash
 npm run dev
 ```
 
-The frontend will run on:
+The backend is configured to use port `5000` in the local setup
+described here.
 
-```text
-http://localhost:5173
-```
+### 3. Configure the frontend
 
----
+Open a second terminal:
 
-## 🖥️ Backend Setup
-
-Open another terminal and move to the server folder:
-
-```bash
-cd server
-```
-
-Install dependencies:
-
-```bash
+``` bash
+cd client
 npm install
 ```
 
-Create a `.env` file:
+Create a `.env` file inside the `client` folder:
 
-```env
+``` env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start the Vite development server:
+
+``` bash
+npm run dev
+```
+
+Open the local URL shown in the terminal. The default Vite URL is
+usually:
+
+``` text
+http://localhost:5173
+```
+
+> **Note:** Check the scripts in each `package.json` if a command
+> differs from your local setup. Keep the frontend API URL aligned with
+> the backend's actual API base path.
+
+## Environment Variables
+
+### Backend --- `server/.env`
+
+``` env
 MONGO_URI=your_mongodb_connection_string
-
-JWT_SECRET=your_jwt_secret
-
+JWT_SECRET=your_long_random_jwt_secret
 PORT=5000
 
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
@@ -370,192 +302,76 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 ```
 
-Start the backend:
+### Frontend --- `client/.env`
 
-```bash
-npm start
+``` env
+VITE_API_URL=http://localhost:5000/api
 ```
 
-For development with Nodemon:
+  Variable                  Purpose
+  ------------------------- ----------------------------------------------
+  `MONGO_URI`               Connects the backend to MongoDB
+  `JWT_SECRET`              Signs and verifies JWT authentication tokens
+  `PORT`                    Sets the backend server port
+  `CLOUDINARY_CLOUD_NAME`   Cloudinary account cloud name
+  `CLOUDINARY_API_KEY`      Cloudinary API key
+  `CLOUDINARY_API_SECRET`   Cloudinary API secret
+  `VITE_API_URL`            Backend API base URL used by the frontend
 
-```bash
-npm run dev
-```
+**Security:** Never commit `.env` files or expose database credentials,
+JWT secrets, or Cloudinary API secrets in a public repository. Configure
+production environment variables in the hosting provider's settings.
 
-The backend will run on:
+## Deployment
 
-```text
-http://localhost:5000
-```
+-   **Frontend:** Deployed on Vercel\
+    https://work-near-iota.vercel.app
+-   **Backend:** Deployed on Render\
+    https://worknear-1.onrender.com
+-   **Database:** MongoDB Atlas
+-   **Image storage:** Cloudinary
 
----
+Production frontend and backend URLs must be configured correctly in the
+environment variables and CORS settings.
 
-## 🔑 Environment Variables
+## Learning Outcomes
 
-The following environment variables are required:
+Working on WorkNear provides practical experience with:
 
-| Variable                | Purpose                     |
-| ----------------------- | --------------------------- |
-| `MONGO_URI`             | MongoDB database connection |
-| `JWT_SECRET`            | JWT authentication secret   |
-| `PORT`                  | Backend server port         |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name       |
-| `CLOUDINARY_API_KEY`    | Cloudinary API key          |
-| `CLOUDINARY_API_SECRET` | Cloudinary API secret       |
-| `VITE_API_URL`          | Frontend API URL            |
+-   Building reusable React components and pages
+-   Client-side routing
+-   Integrating a frontend with REST APIs
+-   Developing APIs with Node.js and Express
+-   Designing MongoDB schemas with Mongoose
+-   JWT authentication and role-based authorization
+-   Implementing CRUD operations
+-   Uploading files with Multer and Cloudinary
+-   Managing service bookings and booking status
+-   Creating reviews and complaint workflows
+-   Building role-specific dashboards
+-   Testing APIs with Postman
+-   Using Git and GitHub
+-   Deploying a full-stack application with Vercel and Render
 
-> **Note:** Never upload your `.env` file or expose your database password, JWT secret, or Cloudinary secret in GitHub.
+## Future Improvements
 
----
+Potential enhancements include:
 
-## 🌐 Deployment
+-   Online payment integration
+-   Real-time notifications
+-   Worker availability calendar
+-   Location-based worker search and map integration
+-   Advanced worker filters and sorting
+-   Worker rating summaries
+-   Real-time chat
+-   Email notifications
+-   Booking cancellation workflow
+-   Worker earnings dashboard
 
-### Frontend
+## Developer
 
-The frontend is deployed using **Vercel**.
+**Krishna**\
+*MERN Stack Developer*
 
-```text
-Vercel
-   ↓
-React + Vite Frontend
-```
-
-### Backend
-
-The backend is deployed using **Render**.
-
-```text
-Render
-   ↓
-Node.js + Express API
-```
-
-### Database
-
-MongoDB Atlas is used for the production database.
-
-```text
-MongoDB Atlas
-   ↓
-Users
-Workers
-Bookings
-Reviews
-Complaints
-```
-
-### Image Storage
-
-Cloudinary is used to store worker profile images.
-
-```text
-Worker Image
-     ↓
-Multer
-     ↓
-Cloudinary
-     ↓
-Image URL stored in MongoDB
-```
-
----
-
-## 🔗 Application Architecture
-
-```text
-                WorkNear
-                   │
-        ┌──────────┴──────────┐
-        │                     │
-     Frontend              Backend
-        │                     │
-     React.js              Node.js
-     Vite                  Express.js
-     Tailwind CSS          REST API
-        │                     │
-        └──────────┬──────────┘
-                   │
-              MongoDB Atlas
-                   │
-             Cloudinary
-```
-
----
-
-## 📱 Responsive Design
-
-WorkNear is designed to provide a responsive experience across:
-
-* Desktop
-* Laptop
-* Tablet
-* Mobile devices
-
----
-
-## 🎯 Project Goals
-
-The main goals of WorkNear are:
-
-* Make it easy for users to find local workers.
-* Help workers showcase their skills and services.
-* Provide a simple booking system.
-* Allow users to review completed services.
-* Provide administrators with tools to manage the platform.
-* Build a practical real-world MERN stack application.
-
----
-
-## 🚀 Future Improvements
-
-Some possible future improvements include:
-
-* Online payment integration
-* Real-time notifications
-* Worker availability calendar
-* Location-based worker search
-* Google Maps integration
-* Advanced worker filtering
-* Worker rating display
-* Real-time chat
-* Email notifications
-* Booking cancellation system
-* Worker earnings dashboard
-
----
-
-## 📚 What I Learned
-
-While building WorkNear, I worked with:
-
-* React component development
-* React Router
-* REST API integration
-* Node.js and Express.js
-* MongoDB and Mongoose
-* JWT authentication
-* Role-based authorization
-* CRUD operations
-* File uploads
-* Cloudinary integration
-* Booking management
-* Review systems
-* Admin dashboards
-* API testing with Postman
-* Git and GitHub
-* Vercel deployment
-* Render deployment
-
----
-
-## 👩‍💻 Developer
-
-**Krishna**
-
-MERN Stack Developer
-
-Built as a full-stack MERN project to demonstrate practical web development skills.
-
----
-
-
+WorkNear is a full-stack project built to practise and demonstrate
+practical web development skills using the MERN stack.
