@@ -57,7 +57,6 @@ function AppContent() {
     "/edit-worker-profile",
   ].includes(location.pathname);
 
-  // Hide the shared Navbar and Footer on the user dashboard too.
   const isUserDashboard = location.pathname === "/profile";
 
   const hideLayout =
@@ -76,6 +75,7 @@ function AppContent() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/workers" element={<Workers />} />
+
         <Route
           path="/worker/:id"
           element={<WorkerDetails />}
@@ -104,6 +104,7 @@ function AppContent() {
           }
         />
 
+        {/* Booking page */}
         <Route
           path="/booking/:workerId"
           element={

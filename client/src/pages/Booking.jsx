@@ -17,7 +17,7 @@ import {
 import api from "../services/api";
 
 function Booking() {
-  const { id } = useParams();
+  const { workerId } = useParams();
   const navigate = useNavigate();
 
   const [worker, setWorker] = useState({});
@@ -32,12 +32,22 @@ function Booking() {
 
   useEffect(() => {
     const getWorker = async () => {
+      if (!workerId) {
+        setMessage("Worker ID is missing. Please select a professional again.");
+        setMessageType("error");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await api.get("/workers/" + id);
+        const res = await api.get(`/workers/${workerId}`);
         setWorker(res.data);
       } catch (error) {
         console.error("Error fetching worker:", error);
-        setMessage("Unable to load worker details. Please try again.");
+        setMessage(
+          error.response?.data?.message ||
+          "Unable to load worker details. Please try again."
+        );
         setMessageType("error");
       } finally {
         setLoading(false);
@@ -45,7 +55,7 @@ function Booking() {
     };
 
     getWorker();
-  }, [id]);
+  }, [workerId]);
 
   const bookWorker = async (e) => {
     e.preventDefault();
@@ -53,10 +63,14 @@ function Booking() {
     setMessage("");
     setMessageType("");
 
+    if (!workerId || !worker._id) {
+      setMessage("Worker details are unavailable. Please try again.");
+      setMessageType("error");
+      return;
+    }
+
     if (!date || !time) {
-      setMessage(
-        "Please select your preferred booking date and time."
-      );
+      setMessage("Please select your preferred booking date and time.");
       setMessageType("error");
       return;
     }
@@ -73,7 +87,7 @@ function Booking() {
 
     try {
       await api.post("/bookings", {
-        worker: id,
+        worker: workerId,
         date,
         time,
         problem,
@@ -86,7 +100,7 @@ function Booking() {
 
       setMessage(
         error.response?.data?.message ||
-          "Booking failed. Please check your details and try again."
+        "Booking failed. Please check your details and try again."
       );
 
       setMessageType("error");
@@ -108,7 +122,6 @@ function Booking() {
       <div className="flex min-h-[70vh] items-center justify-center bg-[#f8f6f2] px-5">
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-orange-100 border-t-orange-500" />
-
           <p className="mt-5 text-sm font-medium text-neutral-500">
             Preparing your booking...
           </p>
@@ -117,7 +130,7 @@ function Booking() {
     );
   }
 
-  if (messageType === "error" && !worker._id && !worker.user) {
+  if (!worker._id) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center bg-[#f8f6f2] px-5">
         <div className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
@@ -128,7 +141,7 @@ function Booking() {
           </h2>
 
           <p className="mt-3 text-sm leading-6 text-neutral-500">
-            {message}
+            {message || "Worker details could not be found."}
           </p>
 
           <button
@@ -154,16 +167,14 @@ function Booking() {
     <main className="min-h-screen bg-[#f8f6f2] px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:pt-14">
       <div className="mx-auto max-w-6xl">
 
-        {/* Back navigation */}
         <Link
-          to={`/worker/${worker._id || id}`}
+          to={`/worker/${worker._id}`}
           className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 transition hover:text-orange-600"
         >
           <FaArrowLeft />
           Back to professional
         </Link>
 
-        {/* Main content */}
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5 lg:gap-8">
 
           {/* Worker information */}
@@ -190,7 +201,7 @@ function Booking() {
 
                 <div className="min-w-0">
                   <Link
-                    to={`/worker/${worker._id || id}`}
+                    to={`/worker/${worker._id}`}
                     className="break-words text-lg font-bold text-neutral-900 transition hover:text-orange-600 sm:text-xl"
                   >
                     {workerName}
@@ -201,7 +212,7 @@ function Booking() {
                   </span>
 
                   <Link
-                    to={`/worker/${worker._id || id}`}
+                    to={`/worker/${worker._id}`}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-neutral-500 transition hover:text-orange-600"
                   >
                     View profile
@@ -213,8 +224,6 @@ function Booking() {
               <div className="my-7 border-t border-neutral-100" />
 
               <div className="space-y-5">
-
-                {/* Location */}
                 <div className="flex items-start gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-neutral-600">
                     <FaMapMarkerAlt />
@@ -224,14 +233,12 @@ function Booking() {
                     <p className="text-xs font-medium text-neutral-500">
                       Service location
                     </p>
-
                     <p className="mt-1.5 break-words text-sm font-semibold text-neutral-800">
                       {worker.location || "Location not specified"}
                     </p>
                   </div>
                 </div>
 
-                {/* Price */}
                 <div className="flex items-start gap-3.5">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
                     <FaRupeeSign />
@@ -241,20 +248,17 @@ function Booking() {
                     <p className="text-xs font-medium text-neutral-500">
                       Listed service price
                     </p>
-
                     <p className="mt-1 text-xl font-bold text-neutral-950">
                       {worker.pricing != null
                         ? `₹${worker.pricing}`
                         : "Contact for price"}
                     </p>
-
                     <p className="mt-1 text-xs leading-5 text-neutral-500">
                       Final pricing can be confirmed with the professional.
                     </p>
                   </div>
                 </div>
 
-                {/* Experience */}
                 {worker.experience != null && (
                   <div className="flex items-start gap-3.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-neutral-600">
@@ -265,7 +269,6 @@ function Booking() {
                       <p className="text-xs font-medium text-neutral-500">
                         Experience
                       </p>
-
                       <p className="mt-1.5 text-sm font-semibold text-neutral-800">
                         {worker.experience} years
                       </p>
@@ -274,16 +277,13 @@ function Booking() {
                 )}
               </div>
 
-              {/* Information panel */}
               <div className="mt-8 rounded-xl border border-orange-100 bg-[#fffaf5] p-4">
                 <div className="flex items-start gap-3">
                   <FaShieldAlt className="mt-0.5 shrink-0 text-orange-500" />
-
                   <div>
                     <p className="text-sm font-bold text-neutral-900">
                       Clear details, better service
                     </p>
-
                     <p className="mt-1.5 text-xs leading-5 text-neutral-600">
                       Share your requirements clearly to help the professional
                       prepare for the job.
@@ -296,16 +296,13 @@ function Booking() {
 
           {/* Booking form */}
           <section className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.035)] lg:col-span-3">
-
             <div className="border-b border-neutral-100 px-6 py-6 sm:px-8 sm:py-7">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-orange-600">
                 Booking information
               </p>
-
               <h2 className="mt-2.5 text-2xl font-bold tracking-tight text-neutral-950">
                 Plan your service
               </h2>
-
               <p className="mt-2 text-sm leading-6 text-neutral-500">
                 Select a suitable date and time, then describe the work you
                 need done.
@@ -313,8 +310,6 @@ function Booking() {
             </div>
 
             <form onSubmit={bookWorker} className="space-y-6 p-6 sm:p-8">
-
-              {/* Success and error messages */}
               {message && (
                 <div
                   role={messageType === "error" ? "alert" : "status"}
@@ -330,16 +325,14 @@ function Booking() {
                   ) : (
                     <FaExclamationCircle className="mt-1 shrink-0" />
                   )}
-
                   <p>{message}</p>
                 </div>
               )}
 
-              {/* Actions after successful booking */}
               {messageType === "success" && (
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <Link
-                    to={`/worker/${worker._id || id}`}
+                    to={`/worker/${worker._id}`}
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-700 transition hover:border-orange-300 hover:text-orange-600"
                   >
                     View worker profile
@@ -357,9 +350,7 @@ function Booking() {
                 </div>
               )}
 
-              {/* Date and time */}
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-
                 <div>
                   <label
                     htmlFor="booking-date"
@@ -370,7 +361,6 @@ function Booking() {
 
                   <div className="relative">
                     <FaCalendarAlt className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400" />
-
                     <input
                       id="booking-date"
                       type="date"
@@ -394,7 +384,6 @@ function Booking() {
 
                   <div className="relative">
                     <FaClock className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-neutral-400" />
-
                     <input
                       id="booking-time"
                       type="time"
@@ -408,7 +397,6 @@ function Booking() {
                 </div>
               </div>
 
-              {/* Problem description */}
               <div>
                 <div className="mb-2.5 flex items-center justify-between gap-3">
                   <label
@@ -417,7 +405,6 @@ function Booking() {
                   >
                     Describe your work
                   </label>
-
                   <span className="text-xs tabular-nums text-neutral-400">
                     {problem.length}/500
                   </span>
@@ -433,13 +420,11 @@ function Booking() {
                   onChange={(e) => setProblem(e.target.value)}
                   disabled={messageType === "success"}
                 />
-
                 <p className="mt-2 text-xs leading-5 text-neutral-500">
                   Add any important details about the job or problem.
                 </p>
               </div>
 
-              {/* Submit button */}
               {messageType !== "success" && (
                 <div className="border-t border-neutral-100 pt-6">
                   <button
