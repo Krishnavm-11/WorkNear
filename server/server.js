@@ -20,14 +20,23 @@ const app = express();
 // Allowed frontend URLs
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://work-near-rj65.vercel.app",
   "https://work-near-iota.vercel.app",
   "https://work-near-3jw4.vercel.app",
 ];
 
-// Configure CORS only once
+// CORS configuration
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked by CORS:", origin);
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -56,7 +65,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// Temporary authentication route test
+// Authentication route test
 app.get("/api/auth/test", (req, res) => {
   res.status(200).json({
     message: "Auth routes are working",
