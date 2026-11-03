@@ -1,3 +1,5 @@
+
+import mongoose from "mongoose";
 import Worker from "../models/Worker.js";
 import Review from "../models/Review.js";
 
@@ -14,8 +16,8 @@ export const createWorker = async (req, res) => {
       });
     }
 
-    console.log("Body:", req.body);
-    console.log("File:", req.file);
+    console.log("CREATE WORKER BODY:", req.body);
+    console.log("CREATE WORKER FILE:", req.file);
 
     const worker = await Worker.create({
       user: req.user._id,
@@ -29,20 +31,20 @@ export const createWorker = async (req, res) => {
       isApproved: false,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Worker Profile Created Successfully",
       worker,
     });
   } catch (error) {
-  console.log("CREATE WORKER ERROR:", error);
+    console.error("CREATE WORKER ERROR:", error);
 
-  res.status(500).json({
-    message: error.message,
-  });
-}
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
 };
 
-// Logged in worker profile
+// Logged-in worker profile
 export const getMyWorker = async (req, res) => {
   try {
     const worker = await Worker.findOne({
@@ -55,17 +57,19 @@ export const getMyWorker = async (req, res) => {
       });
     }
 
-    res.json(worker);
+    return res.json(worker);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET MY WORKER ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
 };
 
+// Update worker profile
 export const updateWorker = async (req, res) => {
   try {
-
     const worker = await Worker.findOne({
       user: req.user._id,
     });
@@ -81,6 +85,7 @@ export const updateWorker = async (req, res) => {
     worker.experience = req.body.experience;
     worker.pricing = req.body.pricing;
     worker.location = req.body.location;
+    worker.description = req.body.description;
 
     if (req.file) {
       worker.profileImage = req.file.path;
@@ -88,17 +93,16 @@ export const updateWorker = async (req, res) => {
 
     await worker.save();
 
-    res.json({
+    return res.json({
       message: "Profile Updated Successfully",
       worker,
     });
-
   } catch (error) {
+    console.error("UPDATE WORKER ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
     });
-
   }
 };
 
@@ -109,9 +113,11 @@ export const getWorkers = async (req, res) => {
       isApproved: true,
     }).populate("user", "name email");
 
-    res.json(workers);
+    return res.json(workers);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET WORKERS ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
@@ -124,26 +130,28 @@ export const getFeaturedWorkers = async (req, res) => {
       isApproved: true,
     }).populate("user", "name email");
 
-    const featuredWorkers = [];
+    const featuredWorkers = await Promise.all(
+      workers.map(async (worker) => {
+        const totalReviews = await Review.countDocuments({
+          worker: worker._id,
+        });
 
-    for (let worker of workers) {
-      const reviews = await Review.find({
-        worker: worker._id,
-      });
+        return {
+          ...worker.toObject(),
+          totalReviews,
+        };
+      })
+    );
 
-      featuredWorkers.push({
-        ...worker._doc,
-        totalReviews: reviews.length,
-      });
-    }
+    featuredWorkers.sort(
+      (a, b) => b.totalReviews - a.totalReviews
+    );
 
-    featuredWorkers.sort((a, b) => {
-      return b.totalReviews - a.totalReviews;
-    });
-
-    res.json(featuredWorkers.slice(0, 3));
+    return res.json(featuredWorkers.slice(0, 3));
   } catch (error) {
-    res.status(500).json({
+    console.error("FEATURED WORKERS ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
@@ -155,9 +163,11 @@ export const getAllWorkers = async (req, res) => {
     const workers = await Worker.find()
       .populate("user", "name email");
 
-    res.json(workers);
+    return res.json(workers);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET ALL WORKERS ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
@@ -166,6 +176,12 @@ export const getAllWorkers = async (req, res) => {
 // Get single worker
 export const getWorker = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid worker ID",
+      });
+    }
+
     const worker = await Worker.findById(req.params.id)
       .populate("user", "name email");
 
@@ -175,9 +191,11 @@ export const getWorker = async (req, res) => {
       });
     }
 
-    res.json(worker);
+    return res.json(worker);
   } catch (error) {
-    res.status(500).json({
+    console.error("GET WORKER ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
@@ -186,6 +204,12 @@ export const getWorker = async (req, res) => {
 // Admin - approve worker
 export const approveWorker = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        message: "Invalid worker ID",
+      });
+    }
+
     const worker = await Worker.findById(req.params.id);
 
     if (!worker) {
@@ -198,12 +222,14 @@ export const approveWorker = async (req, res) => {
 
     await worker.save();
 
-    res.json({
+    return res.json({
       message: "Worker Approved Successfully",
       worker,
     });
   } catch (error) {
-    res.status(500).json({
+    console.error("APPROVE WORKER ERROR:", error);
+
+    return res.status(500).json({
       message: error.message,
     });
   }
