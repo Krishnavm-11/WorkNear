@@ -1,3 +1,4 @@
+
 import express from "express";
 
 import {
@@ -5,7 +6,6 @@ import {
   verifyRegisterOtp,
   resendRegisterOtp,
   loginUser,
-  verifyLoginOtp,
   adminLogin,
   getMyProfile,
   updateMyProfile,
@@ -15,20 +15,19 @@ import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// Registration OTP
 router.post("/register/send-otp", registerUser);
-
 router.post("/register/verify-otp", verifyRegisterOtp);
-
 router.post("/register/resend-otp", resendRegisterOtp);
 
-router.post("/login/send-otp", loginUser);
+// Customer and worker login WITHOUT OTP
+router.post("/login/password", loginUser);
 
-router.post("/verify-otp", verifyLoginOtp);
-
+// Admin login WITHOUT OTP
 router.post("/login", adminLogin);
 
+// Profile
 router.get("/profile", protect, getMyProfile);
-
 router.put("/profile", protect, updateMyProfile);
 
 export default router;

@@ -1,5 +1,5 @@
+
 import User from "../models/User.js";
-import LoginOtp from "../models/LoginOtp.js";
 import RegisterOtp from "../models/RegisterOtp.js";
 
 import bcrypt from "bcryptjs";
@@ -398,8 +398,8 @@ export const resendRegisterOtp = async (req, res) => {
 };
 
 // ========================================
-// CUSTOMER/WORKER: SEND LOGIN OTP
-// POST /api/auth/login/send-otp
+// CUSTOMER/WORKER: LOGIN WITHOUT OTP
+// POST /api/auth/login/password
 // ========================================
 export const loginUser = async (req, res) => {
   try {
@@ -437,141 +437,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const existingOtp = await LoginOtp.findOne({
-      email: normalizedEmail,
-    });
-
-    if (existingOtp) {
-      const wait = resendWait(existingOtp);
-
-      if (wait > 0) {
-        return res.status(429).json({
-          message: "Please wait before requesting another OTP.",
-          retryAfter: wait,
-        });
-      }
-    }
-
-    const otp = generateOtp();
-
-    await LoginOtp.findOneAndUpdate(
-      { email: normalizedEmail },
-      {
-        email: normalizedEmail,
-        otpHash: hashOtp(otp),
-        expiresAt: otpExpiry(),
-        attempts: 0,
-        lastSentAt: new Date(),
-      },
-      {
-        upsert: true,
-        returnDocument: "after",
-        runValidators: true,
-        setDefaultsOnInsert: true,
-      }
-    );
-
-    try {
-      await sendOtpEmail(normalizedEmail, otp, "login");
-    } catch (emailError) {
-      console.error("Login OTP email error:", emailError.message);
-
-      await LoginOtp.deleteOne({ email: normalizedEmail });
-
-      return res.status(502).json({
-        message: "Could not send the login OTP email. Please try again.",
-      });
-    }
-
-    return res.status(200).json({
-      message: "Login OTP sent. It expires in 5 minutes.",
-      email: normalizedEmail,
-    });
-  } catch (error) {
-    console.error("Login OTP error:", error);
-
-    return res.status(500).json({
-      message: "Unable to start login. Please try again.",
-    });
-  }
-};
-
-// ========================================
-// CUSTOMER/WORKER: VERIFY LOGIN OTP
-// POST /api/auth/verify-otp
-// ========================================
-export const verifyLoginOtp = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-
-    if (
-      typeof email !== "string" ||
-      !email.trim() ||
-      typeof otp !== "string" ||
-      !/^\d{6}$/.test(otp)
-    ) {
-      return res.status(400).json({
-        message: "Enter your email and a valid 6-digit OTP.",
-      });
-    }
-
-    const normalizedEmail = normalizeEmail(email);
-
-    const record = await LoginOtp.findOne({
-      email: normalizedEmail,
-    });
-
-    if (!record) {
-      return res.status(400).json({
-        message: "OTP not found. Please log in again.",
-      });
-    }
-
-    if (new Date(record.expiresAt).getTime() <= Date.now()) {
-      await LoginOtp.deleteOne({ _id: record._id });
-
-      return res.status(400).json({
-        message: "OTP expired. Please log in again.",
-      });
-    }
-
-    if (record.attempts >= MAX_OTP_ATTEMPTS) {
-      await LoginOtp.deleteOne({ _id: record._id });
-
-      return res.status(429).json({
-        message: "Too many incorrect attempts. Please log in again.",
-      });
-    }
-
-    if (!compareOtp(otp, record.otpHash)) {
-      record.attempts += 1;
-
-      if (record.attempts >= MAX_OTP_ATTEMPTS) {
-        await LoginOtp.deleteOne({ _id: record._id });
-
-        return res.status(429).json({
-          message: "Too many incorrect attempts. Please log in again.",
-        });
-      }
-
-      await record.save();
-
-      return res.status(400).json({
-        message: "Incorrect OTP. Please try again.",
-        attemptsRemaining: MAX_OTP_ATTEMPTS - record.attempts,
-      });
-    }
-
-    const user = await findUserByEmail(normalizedEmail);
-
-    if (!user || !["user", "worker"].includes(user.role)) {
-      await LoginOtp.deleteOne({ _id: record._id });
-
-      return res.status(401).json({
-        message: "Account is no longer available for this login.",
-      });
-    }
-
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not configured.");
     }
@@ -581,8 +446,6 @@ export const verifyLoginOtp = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
-
-    await LoginOtp.deleteOne({ _id: record._id });
 
     return res.status(200).json({
       message: "Login successful.",
@@ -597,10 +460,10 @@ export const verifyLoginOtp = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login OTP verification error:", error);
+    console.error("Login error:", error);
 
     return res.status(500).json({
-      message: "OTP verification failed. Please try again.",
+      message: "Login failed. Please try again.",
     });
   }
 };
@@ -726,7 +589,10 @@ export const updateMyProfile = async (req, res) => {
       });
     }
 
-    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    if (
+      !normalizedEmail ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+    ) {
       return res.status(400).json({
         message: "Please enter a valid email address.",
       });
