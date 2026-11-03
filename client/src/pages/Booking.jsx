@@ -75,10 +75,11 @@ function Booking() {
       return;
     }
 
+    const now = new Date();
     const selectedDate = new Date(`${date}T${time}`);
 
-    if (selectedDate <= new Date()) {
-      setMessage("Please select a future date and time.");
+    if (selectedDate <= now) {
+      setMessage("Please select an upcoming date and time.");
       setMessageType("error");
       return;
     }
@@ -314,11 +315,10 @@ function Booking() {
                 <div
                   role={messageType === "error" ? "alert" : "status"}
                   aria-live="polite"
-                  className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${
-                    messageType === "success"
+                  className={`flex items-start gap-3 rounded-xl border p-4 text-sm leading-6 ${messageType === "success"
                       ? "border-green-200 bg-green-50 text-green-800"
                       : "border-red-200 bg-red-50 text-red-700"
-                  }`}
+                    }`}
                 >
                   {messageType === "success" ? (
                     <FaCheckCircle className="mt-1 shrink-0" />
